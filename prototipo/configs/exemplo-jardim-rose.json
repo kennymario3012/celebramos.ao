@@ -1,0 +1,247 @@
+{
+  "$comentario": "EXEMPLO FICTÍCIO. Variante «Jardim Rosé», com a ordem de secções do convite de referência e galeria de fotos.",
+  "id": "exemplo-jardim-rose",
+  "tipo": "15-anos",
+  "demonstracao": true,
+  "tema": {
+    "id": "jardim-rose",
+    "nome": "Jardim Rosé",
+    "tokens": {
+      "--bg": "#f6ebe9",
+      "--ink": "#3a272c",
+      "--muted": "#6d555b",
+      "--script": "#a65b72",
+      "--accent": "#9b5068",
+      "--accent-contrast": "#fff",
+      "--line": "#6e4654",
+      "--gold": "#9b5068",
+      "--seal": "#b0687e",
+      "--seal-ink": "#fbe8ee",
+      "--env-paper": "#fffaf8",
+      "--env-shade": "#ecd6d7",
+      "--env-letter": "#fffdfb",
+      "--backdrop": "#1d1217",
+      "--backdrop-a": "rgba(29,18,23,.6)",
+      "--backdrop-b": "rgba(29,18,23,.78)",
+      "--border-valido": "rgba(58,39,44,.4)",
+      "--border-contagem": "rgba(155,80,104,.5)"
+    },
+    "selo": {
+      "brilho": "#fbe8ee",
+      "base": "#b0687e",
+      "sombra": "#7b4958",
+      "anel": "#6a3e4c"
+    },
+    "imagens": {
+      "papel": "img/papel.webp",
+      "canto": "img/florais-canto.webp",
+      "cantoAlt": "img/florais-canto-alt.webp",
+      "grinalda": "img/grinalda.webp",
+      "ilustracao": {
+        "src": "img/ilustracao-15.webp",
+        "w": 1200,
+        "h": 1000
+      },
+      "mensagem": {
+        "src": "img/vestido.webp",
+        "w": 1200,
+        "h": 1270
+      }
+    }
+  },
+  "seccoes": [
+    "confirmacao",
+    "convite",
+    "galeria",
+    "mensagem",
+    "cronograma",
+    "contagem",
+    "manual",
+    "obrigada"
+  ],
+  "decoracao": {
+    "confirmacao": "canto:tl:54:300 alt:br:54:300",
+    "convite": "",
+    "galeria": "",
+    "mensagem": "canto:tl:40:220 alt:tr:40:220 grinalda:bottom",
+    "cronograma": "alt:br:42:230",
+    "contagem": "canto:tl:46:250 alt:br:50:270",
+    "manual": "alt:tl:46:250",
+    "obrigada": "grinalda:top alt:bl:48:260"
+  },
+  "debutante": "Mariana",
+  "nomeCompleto": "Mariana Gomes",
+  "monograma": "M",
+  "selo": "15",
+  "abertura": "",
+  "tituloPagina": "Convite · 15 Anos de Mariana Gomes",
+  "bencao": "Com a bênção de Deus",
+  "pais": [
+    [
+      "Paulo Gomes"
+    ],
+    [
+      "Teresa Gomes"
+    ]
+  ],
+  "convidam": "Têm a honra de convidar",
+  "motivo": "para celebrar os 15 anos da sua filha.",
+  "temaFesta": "",
+  "data": {
+    "iso": "2027-03-20T17:00:00+01:00",
+    "dia": 20,
+    "mes": 3,
+    "ano": 2027,
+    "diaSemana": "sábado",
+    "hora": "17h00"
+  },
+  "calendario": {
+    "titulo": "15 Anos da Mariana",
+    "inicioUTC": "20270320T160000Z",
+    "fimUTC": "20270320T230000Z",
+    "local": "Salão Jardim das Rosas, Luanda",
+    "detalhes": "Missa de Acção de Graças: Igreja Exemplo, 17h00\nFesta: Salão Jardim das Rosas, 19h30",
+    "ics": "calendario.ics"
+  },
+  "confirmacao": {
+    "ate": "6 de Março de 2027",
+    "nota": "A sua confirmação segue por WhatsApp directamente para os pais da debutante.",
+    "botoes": [
+      {
+        "rotulo": "Confirmar presença (mãe)",
+        "telefone": ""
+      },
+      {
+        "rotulo": "Confirmar presença (pai)",
+        "telefone": ""
+      }
+    ],
+    "mensagem": "Olá! Confirmo a presença na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}{pessoas}"
+  },
+  "galeria": {
+    "subtitulo": "Confira os meus pequenos momentos",
+    "fotos": [
+      {
+        "src": "img/foto-1.webp",
+        "alt": "Ramo de rosas"
+      },
+      {
+        "src": "img/foto-2.webp",
+        "alt": "Arco de flores com o número 15"
+      },
+      {
+        "src": "img/foto-3.webp",
+        "alt": "Vestido de debutante"
+      }
+    ]
+  },
+  "mensagem": "Há momentos que ficam para sempre, e os meus 15 anos serão ainda mais especiais com a sua presença.\nMariana",
+  "eventos": [
+    {
+      "titulo": "Missa de Acção de Graças",
+      "antes": "Terá lugar na",
+      "local": "Igreja Exemplo",
+      "depois": ", às 17h00.",
+      "mapa": "Luanda",
+      "coordenadas": null
+    },
+    {
+      "titulo": "Festa",
+      "antes": "Será realizada no",
+      "local": "Salão Jardim das Rosas",
+      "depois": ", às 19h30.",
+      "mapa": "Luanda",
+      "coordenadas": null
+    }
+  ],
+  "cronograma": [
+    {
+      "icone": "users-group",
+      "rotulo": "Chegada dos convidados",
+      "hora": "19h30"
+    },
+    {
+      "icone": "crown",
+      "rotulo": "Entrada da debutante",
+      "hora": "20h00"
+    },
+    {
+      "icone": "music",
+      "rotulo": "Valsa da debutante",
+      "hora": "20h15"
+    },
+    {
+      "icone": "tools-kitchen-2",
+      "rotulo": "Abertura do bufete",
+      "hora": "20h45"
+    },
+    {
+      "icone": "candle",
+      "rotulo": "Cerimónia das 15 velas",
+      "hora": "21h45"
+    },
+    {
+      "icone": "cake",
+      "rotulo": "Corte do bolo",
+      "hora": "22h15"
+    },
+    {
+      "icone": "camera",
+      "rotulo": "Sessão de fotos",
+      "hora": "22h30"
+    },
+    {
+      "icone": "confetti",
+      "rotulo": "Pista de dança aberta",
+      "hora": "23h00"
+    }
+  ],
+  "manual": [
+    {
+      "icone": "users-group",
+      "texto": "Contamos com a sua presença!"
+    },
+    {
+      "icone": "clock",
+      "texto": "Seja pontual!"
+    },
+    {
+      "icone": "user-plus",
+      "texto": "Convidado não convida!"
+    },
+    {
+      "icone": "confetti",
+      "texto": "Celebre comigo os meus 15 anos!"
+    },
+    {
+      "icone": "vestido",
+      "texto": "Rosa é a cor da debutante!"
+    },
+    {
+      "icone": "camera-heart",
+      "texto": "Faça muitas fotos e Stories!"
+    },
+    {
+      "icone": "music",
+      "texto": "É obrigatório dançar muito!"
+    },
+    {
+      "icone": "mood-smile",
+      "texto": "Sorria e seja muito feliz!"
+    }
+  ],
+  "agradecimento": {
+    "titulo": "Obrigada",
+    "subtitulo": "de coração",
+    "texto": "Obrigada por fazer parte deste dia tão especial da minha vida."
+  },
+  "musica": null,
+  "convidadoGenerico": "Família e Amigos",
+  "convidadoDemonstracao": "familia-neto",
+  "convidados": {
+    "familia-neto": {
+      "nome": "Sr. Carlos Neto e Família",
+      "pessoas": 3
+    }
+  }
+}

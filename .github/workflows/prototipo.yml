@@ -1,0 +1,53 @@
+name: Protótipo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Validar, construir e testar
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: prototipo
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: prototipo/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: prototipo/requirements.txt
+
+      - name: Dependências
+        run: |
+          npm ci
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Validar configurações
+        run: npm run validar
+
+      - name: Construir exemplos
+        run: npm run construir
+
+      - name: Exemplos versionados actualizados
+        run: |
+          # o .ics leva a data de geração (DTSTAMP); o resto tem de coincidir com o que está no repositório
+          git diff --exit-code -- exemplos ':(exclude)exemplos/*/calendario.ics' \
+            || (echo "::error::Os exemplos versionados estão desactualizados: correr 'npm run construir' e fazer commit." && exit 1)
+
+      - name: Critérios de aceitação
+        run: npm run testar

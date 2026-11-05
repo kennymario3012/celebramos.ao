@@ -1,0 +1,25 @@
+# dependências
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+
+# ficheiros gerados pelo protótipo
+prototipo/.construcao/
+prototipo/exemplos/*/_capturas/
+prototipo/papel-teste.webp
+prototipo/test-results/
+
+# dados reais de clientes: NUNCA no repositório (público)
+prototipo/configs/privado/
+prototipo/saida/
+
+# sistema e editores
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+*.swp
+.env
+.env.*

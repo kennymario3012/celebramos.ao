@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://celebramos.ao/esquemas/convite.schema.json",
+  "title": "Configuração de um convite (contrato do renderizador)",
+  "description": "Estrutura consumida por prototipo/template.html. Documentação campo a campo em docs/04-modelo-de-dados.md. Na plataforma, esta configuração é gerada a partir do modelo de domínio e da versão publicada; o campo `convidados` é substituído pelo convidado actual (nunca a lista completa).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "tipo", "tema", "debutante", "monograma", "tituloPagina", "bencao", "pais", "convidam", "motivo",
+    "data", "calendario", "confirmacao", "galeria", "mensagem", "eventos", "cronograma", "manual",
+    "agradecimento", "convidadoGenerico", "convidados"
+  ],
+  "properties": {
+    "$comentario": { "type": "string", "description": "Nota livre (ignorada pelo renderizador)." },
+    "id": { "$ref": "#/$defs/slug", "description": "Identificador único do convite. Usado na chave de sessionStorage `convite-aberto:<id>` e no UID do .ics." },
+    "tipo": { "type": "string", "pattern": "^[a-z0-9-]+$", "examples": ["15-anos", "casamento", "aniversario"] },
+    "demonstracao": { "type": "boolean", "default": false, "description": "Pré-visualização: sem link pessoal, mostra o convidado `convidadoDemonstracao`. Desligar antes de enviar." },
+    "tema": { "$ref": "#/$defs/tema" },
+    "seccoes": {
+      "type": "array",
+      "description": "Ordem das secções. Secções omitidas não aparecem. Por omissão: todas, pela ordem do docs/02 §3.1.",
+      "items": { "$ref": "#/$defs/seccao" },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "decoracao": {
+      "type": "object",
+      "description": "Decoração por secção (sobrepõe a do template). Gramática em docs/04.",
+      "propertyNames": { "$ref": "#/$defs/seccao" },
+      "additionalProperties": { "$ref": "#/$defs/decoracao" }
+    },
+    "debutante": { "type": "string", "minLength": 1, "maxLength": 24, "description": "Nome curto do homenageado (envelope, assinatura, mensagem de confirmação). Na plataforma: `homenageado`." },
+    "nomeCompleto": { "type": "string", "maxLength": 60 },
+    "monograma": { "type": "string", "minLength": 1, "maxLength": 3 },
+    "selo": {
+      "description": "Desenho do selo de cera: texto curto (1–3 caracteres, ex.: «15», «BA») ou o ícone «rosa». Por omissão: o monograma.",
+      "anyOf": [ { "const": "rosa" }, { "type": "string", "minLength": 1, "maxLength": 3 } ]
+    },
+    "abertura": { "type": "string", "maxLength": 40, "description": "Linha opcional acima do nome no ecrã de abertura (ex.: «Era uma vez…»)." },
+    "tituloPagina": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "bencao": { "type": "string", "maxLength": 60 },
+    "pais": {
+      "type": "array",
+      "description": "Anfitriões: 1 coluna (um grupo) ou 2 colunas (dois grupos, ex.: pais da noiva | pais do noivo). Um nome por linha.",
+      "minItems": 1, "maxItems": 2,
+      "items": { "type": "array", "minItems": 1, "maxItems": 4, "items": { "type": "string", "minLength": 1, "maxLength": 60 } }
+    },
+    "convidam": { "type": "string", "maxLength": 60, "description": "Concordar com o número de anfitriões: «Tem/Têm a honra de convidar»." },
+    "motivo": { "type": "string", "maxLength": 120 },
+    "temaFesta": { "type": "string", "maxLength": 40, "description": "Tema da festa (opcional). Vazio: o bloco não aparece." },
+    "data": {
+      "type": "object", "additionalProperties": false,
+      "required": ["iso", "dia", "mes", "ano", "diaSemana", "hora"],
+      "description": "Data e hora de início. Na plataforma, os campos de apresentação derivam de `iso` (fuso Africa/Luanda).",
+      "properties": {
+        "iso": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?([+-]\\d{2}:\\d{2}|Z)$" },
+        "dia": { "type": "integer", "minimum": 1, "maximum": 31 },
+        "mes": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "ano": { "type": "integer", "minimum": 2024 },
+        "diaSemana": { "enum": ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"] },
+        "hora": { "type": "string", "pattern": "^\\d{1,2}h\\d{2}$" }
+      }
+    },
+    "calendario": {
+      "type": "object", "additionalProperties": false,
+      "required": ["titulo", "inicioUTC", "fimUTC", "local", "detalhes"],
+      "properties": {
+        "titulo": { "type": "string", "maxLength": 80 },
+        "inicioUTC": { "$ref": "#/$defs/dataUTC" },
+        "fimUTC": { "$ref": "#/$defs/dataUTC" },
+        "local": { "type": "string", "maxLength": 200, "description": "Nome e morada, ou «lat,lng»." },
+        "detalhes": { "type": "string", "maxLength": 1000 },
+        "ics": { "type": "string", "pattern": "^[A-Za-z0-9._-]+\\.ics$", "description": "Se definido, o botão principal descarrega este ficheiro (alojamento próprio). Senão: Google Calendar + Outlook." }
+      }
+    },
+    "confirmacao": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ate", "nota", "botoes", "mensagem"],
+      "properties": {
+        "ate": { "type": "string", "maxLength": 40, "description": "Prazo por extenso (ex.: «1 de Maio de 2027»)." },
+        "nota": { "type": "string", "maxLength": 200 },
+        "botoes": {
+          "type": "array", "minItems": 1, "maxItems": 2,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["rotulo", "telefone"],
+            "properties": {
+              "rotulo": { "type": "string", "minLength": 1, "maxLength": 40 },
+              "telefone": { "type": "string", "pattern": "^(\\+?[0-9][0-9 ]{7,18})?$", "description": "Número internacional (ex.: 2449XXXXXXXX). Vazio: pré-visualização (o botão mostra um aviso)." }
+            }
+          }
+        },
+        "mensagem": { "type": "string", "maxLength": 500, "description": "Modelo da mensagem de WhatsApp. Marcadores: {debutante}, {dataCurta}, {convidado}, {pessoas}." }
+      }
+    },
+    "textos": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "confirmarLead": { "type": "string", "maxLength": 120 },
+        "contagem": { "type": "string", "maxLength": 60 }
+      }
+    },
+    "galeria": {
+      "type": "object", "additionalProperties": false, "required": ["subtitulo", "fotos"],
+      "properties": {
+        "subtitulo": { "type": "string", "maxLength": 80 },
+        "fotos": {
+          "type": "array", "maxItems": 12,
+          "description": "Sem fotos, a secção não aparece. Eventos de menores: vazia por omissão.",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["src", "alt"],
+            "properties": { "src": { "type": "string", "minLength": 1 }, "alt": { "type": "string", "maxLength": 120 } }
+          }
+        }
+      }
+    },
+    "mensagem": { "type": "string", "minLength": 1, "maxLength": 420, "description": "Citação da secção Mensagem; quebras de linha respeitadas. A última linha costuma ser a assinatura." },
+    "eventos": {
+      "type": "array", "minItems": 1, "maxItems": 4,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["titulo", "antes", "local", "depois", "mapa", "coordenadas"],
+        "properties": {
+          "titulo": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "antes": { "type": "string", "maxLength": 60 },
+          "local": { "type": "string", "maxLength": 80, "description": "Parte em destaque (negrito): o local ou a hora." },
+          "depois": { "type": "string", "maxLength": 80 },
+          "mapa": { "type": "string", "maxLength": 200, "description": "Pesquisa de texto para os mapas, usada se não houver coordenadas. Vazio e sem coordenadas: sem botões de mapa." },
+          "coordenadas": {
+            "oneOf": [
+              { "type": "null" },
+              { "type": "array", "prefixItems": [ { "type": "number", "minimum": -90, "maximum": 90 }, { "type": "number", "minimum": -180, "maximum": 180 } ], "minItems": 2, "maxItems": 2 }
+            ]
+          }
+        }
+      }
+    },
+    "cronograma": {
+      "type": "array", "minItems": 1, "maxItems": 12,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["icone", "rotulo", "hora"],
+        "properties": {
+          "icone": { "$ref": "#/$defs/icone" },
+          "rotulo": { "type": "string", "minLength": 1, "maxLength": 32 },
+          "hora": { "type": "string", "maxLength": 12 }
+        }
+      }
+    },
+    "manual": {
+      "type": "array", "minItems": 2, "maxItems": 10,
+      "items": { "$ref": "#/$defs/itemComIcone" }
+    },
+    "presentes": {
+      "description": "Lista de presentes (opcional). `null` ou ausente: a secção não aparece. Com `itens`: grelha de artigos; senão `lojas`.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "texto"],
+          "properties": {
+            "titulo": { "type": "string", "maxLength": 20 },
+            "subtitulo": { "type": "string", "maxLength": 30 },
+            "texto": { "type": "string", "maxLength": 200 },
+            "nota": { "type": "string", "maxLength": 200 },
+            "itens": { "type": "array", "maxItems": 12, "items": { "$ref": "#/$defs/itemComIcone" } },
+            "lojas": {
+              "type": "array", "maxItems": 6,
+              "items": {
+                "type": "object", "additionalProperties": false, "required": ["nome"],
+                "properties": {
+                  "nome": { "type": "string", "minLength": 1, "maxLength": 60 },
+                  "detalhe": { "type": "string", "maxLength": 160 },
+                  "mapa": { "type": "string", "maxLength": 200 },
+                  "link": { "type": "string", "pattern": "^https://" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "agradecimento": {
+      "type": "object", "additionalProperties": false, "required": ["titulo", "subtitulo", "texto"],
+      "properties": {
+        "titulo": { "type": "string", "maxLength": 20, "description": "Concordância: «Obrigada» / «Obrigado» / «Obrigados»." },
+        "subtitulo": { "type": "string", "maxLength": 30 },
+        "texto": { "type": "string", "maxLength": 240 }
+      }
+    },
+    "musica": { "type": ["string", "null"], "description": "URL de um ficheiro de áudio (licenciado). `null`: sem botão de música." },
+    "convidadoGenerico": { "type": "string", "minLength": 1, "maxLength": 60, "description": "Nome no envelope do link geral (ex.: «Família e Amigos»)." },
+    "convidadoDemonstracao": { "type": "string", "description": "Código do convidado mostrado em modo demonstração." },
+    "convidados": {
+      "type": "object",
+      "description": "PROTÓTIPO: códigos dos links pessoais (#código). PLATAFORMA: apenas o convidado actual, resolvido no servidor a partir do token.",
+      "propertyNames": { "$ref": "#/$defs/slug" },
+      "additionalProperties": {
+        "type": "object", "additionalProperties": false, "required": ["nome"],
+        "properties": {
+          "nome": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "pessoas": { "type": "integer", "minimum": 1, "maximum": 30 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "maxLength": 60 },
+    "dataUTC": { "type": "string", "pattern": "^\\d{8}T\\d{6}Z$" },
+    "cor": { "type": "string", "pattern": "^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$" },
+    "seccao": { "enum": ["mensagem", "convite", "confirmacao", "galeria", "cronograma", "contagem", "manual", "presentes", "obrigada"] },
+    "decoracao": {
+      "type": "string",
+      "description": "Itens separados por espaço: «canto|alt:tl|tr|bl|br:<largura %>:<máx px>» ou «grinalda:top|bottom». Vazio: sem decoração.",
+      "pattern": "^$|^((canto|alt):(tl|tr|bl|br):\\d{1,3}:\\d{2,4}|grinalda:(top|bottom))( ((canto|alt):(tl|tr|bl|br):\\d{1,3}:\\d{2,4}|grinalda:(top|bottom)))*$"
+    },
+    "icone": {
+      "description": "Ícones incluídos no protótipo (prototipo/icones.json + «vestido»). Para acrescentar, actualizar icones.json e esta lista.",
+      "enum": [
+        "brand-waze", "brand-whatsapp", "building-store", "cake", "calendar-plus", "camera", "camera-heart", "candle",
+        "chevron-left", "chevron-right", "circle-check-filled", "clock", "confetti", "crown", "device-speaker", "device-watch",
+        "devices", "gift", "glass-full", "hanger", "headphones", "heart", "map-pin-filled", "mood-smile", "music", "perfume",
+        "shoe", "shopping-bag", "sparkles", "tools-kitchen-2", "user-plus", "users-group", "vestido", "volume", "volume-off", "x"
+      ]
+    },
+    "itemComIcone": {
+      "type": "object", "additionalProperties": false, "required": ["icone", "texto"],
+      "properties": {
+        "icone": { "$ref": "#/$defs/icone" },
+        "texto": { "type": "string", "minLength": 1, "maxLength": 48 }
+      }
+    },
+    "imagem": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object", "additionalProperties": false, "required": ["src", "w", "h"],
+          "properties": { "src": { "type": "string", "minLength": 1 }, "w": { "type": "integer", "minimum": 1 }, "h": { "type": "integer", "minimum": 1 } }
+        }
+      ]
+    },
+    "tema": {
+      "type": "object", "additionalProperties": false, "required": ["id", "nome", "tokens", "selo", "imagens"],
+      "properties": {
+        "id": { "$ref": "#/$defs/slug", "description": "Pasta do tema (prototipo/temas/<id>)." },
+        "nome": { "type": "string", "maxLength": 80 },
+        "tokens": {
+          "type": "object",
+          "description": "Variáveis CSS do tema (docs/03).",
+          "propertyNames": { "pattern": "^--[a-z0-9-]+$" },
+          "additionalProperties": { "type": "string", "minLength": 1 },
+          "required": ["--bg", "--ink", "--muted", "--script", "--accent", "--accent-contrast", "--line", "--gold", "--seal", "--seal-ink", "--env-paper", "--env-shade", "--env-letter", "--backdrop", "--backdrop-a", "--backdrop-b", "--border-valido", "--border-contagem"]
+        },
+        "selo": {
+          "type": "object", "additionalProperties": false, "required": ["brilho", "base", "sombra", "anel"],
+          "properties": {
+            "brilho": { "$ref": "#/$defs/cor" }, "base": { "$ref": "#/$defs/cor" },
+            "sombra": { "$ref": "#/$defs/cor" }, "anel": { "$ref": "#/$defs/cor" }
+          }
+        },
+        "imagens": {
+          "type": "object", "additionalProperties": false, "required": ["papel", "canto", "cantoAlt", "grinalda", "ilustracao", "mensagem"],
+          "properties": {
+            "papel": { "type": "string" },
+            "canto": { "$ref": "#/$defs/imagem" },
+            "cantoAlt": { "$ref": "#/$defs/imagem" },
+            "grinalda": { "$ref": "#/$defs/imagem" },
+            "ilustracao": { "$ref": "#/$defs/imagem" },
+            "mensagem": { "$ref": "#/$defs/imagem" }
+          }
+        }
+      }
+    }
+  }
+}

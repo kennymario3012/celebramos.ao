@@ -1,0 +1,280 @@
+{
+  "$comentario": "EXEMPLO FICTÍCIO. Reproduz a estrutura e as decisões de um convite real («A Bela e o Príncipe», vinho/preto/ouro) sem dados pessoais.",
+  "id": "exemplo-bela-principe",
+  "tipo": "15-anos",
+  "demonstracao": true,
+  "tema": {
+    "id": "bela-principe",
+    "nome": "A Bela e o Príncipe — vinho, preto e ouro",
+    "tokens": {
+      "--bg": "#f7f2ea",
+      "--ink": "#1f1416",
+      "--muted": "#5f4c4f",
+      "--script": "#6f1d2e",
+      "--accent": "#6f1d2e",
+      "--accent-contrast": "#fff",
+      "--line": "#a8843b",
+      "--gold": "#b8913f",
+      "--seal": "#6d1a2b",
+      "--seal-ink": "#ecd393",
+      "--env-paper": "#fffbf4",
+      "--env-shade": "#e6d9c3",
+      "--env-letter": "#fffdf8",
+      "--backdrop": "#140b0d",
+      "--backdrop-a": "rgba(20,11,13,.62)",
+      "--backdrop-b": "rgba(20,11,13,.82)",
+      "--border-valido": "rgba(184,145,63,.7)",
+      "--border-contagem": "rgba(184,145,63,.65)"
+    },
+    "selo": {
+      "brilho": "#f0d9a0",
+      "base": "#7a2033",
+      "sombra": "#3f0a17",
+      "anel": "#2c0610"
+    },
+    "imagens": {
+      "papel": "img/papel.webp",
+      "canto": "img/florais-canto.webp",
+      "cantoAlt": "img/florais-canto-alt.webp",
+      "grinalda": "img/grinalda.webp",
+      "ilustracao": {
+        "src": "img/ilustracao-15.webp",
+        "w": 1200,
+        "h": 1000
+      },
+      "mensagem": {
+        "src": "img/espelho.webp",
+        "w": 1200,
+        "h": 1390
+      }
+    }
+  },
+  "seccoes": [
+    "mensagem",
+    "convite",
+    "confirmacao",
+    "cronograma",
+    "contagem",
+    "manual",
+    "presentes",
+    "obrigada"
+  ],
+  "decoracao": {
+    "mensagem": "canto:tl:40:220 alt:tr:40:220 grinalda:bottom",
+    "convite": "",
+    "confirmacao": "alt:br:50:270",
+    "cronograma": "canto:tl:42:230",
+    "contagem": "canto:tl:46:250 alt:br:50:270",
+    "manual": "alt:tl:46:250 canto:br:50:270",
+    "presentes": "canto:tl:44:240",
+    "obrigada": "grinalda:top alt:bl:48:260"
+  },
+  "debutante": "Beatriz",
+  "nomeCompleto": "Beatriz Almeida",
+  "monograma": "BA",
+  "selo": "rosa",
+  "abertura": "Era uma vez…",
+  "tituloPagina": "Convite · 15 Anos de Beatriz Almeida",
+  "bencao": "Com a bênção de Deus",
+  "pais": [
+    [
+      "Joaquim Almeida",
+      "Helena Almeida"
+    ]
+  ],
+  "convidam": "Têm a honra de convidar",
+  "motivo": "para o baile de 15 anos da sua filha.",
+  "temaFesta": "A Bela e o Príncipe",
+  "data": {
+    "iso": "2027-05-15T17:00:00+01:00",
+    "dia": 15,
+    "mes": 5,
+    "ano": 2027,
+    "diaSemana": "sábado",
+    "hora": "17h00"
+  },
+  "calendario": {
+    "titulo": "15 Anos da Beatriz",
+    "inicioUTC": "20270515T160000Z",
+    "fimUTC": "20270515T220000Z",
+    "local": "Salão Exemplo, Luanda",
+    "detalhes": "Culto de Acção de Graças: Igreja Exemplo, 15h00\nFesta: Salão Exemplo, a partir das 17h00",
+    "ics": "calendario.ics"
+  },
+  "confirmacao": {
+    "ate": "1 de Maio de 2027",
+    "nota": "A sua confirmação segue por WhatsApp directamente para a família da debutante.",
+    "botoes": [
+      {
+        "rotulo": "Confirmar presença",
+        "telefone": ""
+      }
+    ],
+    "mensagem": "Olá! Confirmo a presença na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}{pessoas}"
+  },
+  "textos": {
+    "confirmarLead": "Por favor, confirme a sua presença no baile até",
+    "contagem": "para o grande baile"
+  },
+  "galeria": {
+    "subtitulo": "Confira os meus pequenos momentos",
+    "fotos": []
+  },
+  "mensagem": "O meu conto de fadas está prestes a começar, e ficaria muito feliz em contar com a sua presença, criando memórias lindas que vou guardar para sempre.\nBeatriz",
+  "eventos": [
+    {
+      "titulo": "Culto de Acção de Graças",
+      "antes": "Terá lugar na",
+      "local": "Igreja Exemplo",
+      "depois": ", às 15h00.",
+      "mapa": "Luanda",
+      "coordenadas": null
+    },
+    {
+      "titulo": "Festa",
+      "antes": "Terá início às",
+      "local": "17h00",
+      "depois": ", no Salão Exemplo.",
+      "mapa": "",
+      "coordenadas": [
+        -8.8383,
+        13.2344
+      ]
+    }
+  ],
+  "cronograma": [
+    {
+      "icone": "users-group",
+      "rotulo": "Chegada dos convidados",
+      "hora": "17h00"
+    },
+    {
+      "icone": "crown",
+      "rotulo": "Entrada da debutante",
+      "hora": "17h30"
+    },
+    {
+      "icone": "music",
+      "rotulo": "Valsa com o príncipe",
+      "hora": "17h45"
+    },
+    {
+      "icone": "tools-kitchen-2",
+      "rotulo": "Abertura do bufete",
+      "hora": "18h30"
+    },
+    {
+      "icone": "candle",
+      "rotulo": "Cerimónia das 15 velas",
+      "hora": "19h30"
+    },
+    {
+      "icone": "cake",
+      "rotulo": "Corte do bolo",
+      "hora": "20h00"
+    },
+    {
+      "icone": "camera",
+      "rotulo": "Sessão de fotos",
+      "hora": "20h15"
+    },
+    {
+      "icone": "confetti",
+      "rotulo": "Baile para todos",
+      "hora": "20h30"
+    }
+  ],
+  "manual": [
+    {
+      "icone": "users-group",
+      "texto": "Contamos com a sua presença!"
+    },
+    {
+      "icone": "clock",
+      "texto": "Seja pontual!"
+    },
+    {
+      "icone": "user-plus",
+      "texto": "Convidado não convida!"
+    },
+    {
+      "icone": "crown",
+      "texto": "O tema é A Bela e o Príncipe!"
+    },
+    {
+      "icone": "vestido",
+      "texto": "Não vista vinho, preto nem dourado!"
+    },
+    {
+      "icone": "camera-heart",
+      "texto": "Faça muitas fotos e Stories!"
+    },
+    {
+      "icone": "music",
+      "texto": "É obrigatório dançar muito!"
+    },
+    {
+      "icone": "mood-smile",
+      "texto": "Sorria e seja muito feliz!"
+    }
+  ],
+  "presentes": {
+    "titulo": "Lista de",
+    "subtitulo": "presentes",
+    "texto": "Se desejar presentear a Beatriz, ficam aqui algumas sugestões:",
+    "nota": "",
+    "itens": [
+      {
+        "icone": "shoe",
+        "texto": "Ténis"
+      },
+      {
+        "icone": "shopping-bag",
+        "texto": "Bolsas"
+      },
+      {
+        "icone": "headphones",
+        "texto": "Auriculares Bluetooth"
+      },
+      {
+        "icone": "perfume",
+        "texto": "Perfumes"
+      },
+      {
+        "icone": "device-speaker",
+        "texto": "Coluna portátil"
+      },
+      {
+        "icone": "device-watch",
+        "texto": "Relógios inteligentes"
+      },
+      {
+        "icone": "devices",
+        "texto": "Tecnologia"
+      },
+      {
+        "icone": "hanger",
+        "texto": "Moda e beleza"
+      }
+    ],
+    "lojas": []
+  },
+  "agradecimento": {
+    "titulo": "Obrigada",
+    "subtitulo": "de coração",
+    "texto": "Obrigada por fazer parte do meu conto de fadas."
+  },
+  "musica": null,
+  "convidadoGenerico": "Família e Amigos",
+  "convidadoDemonstracao": "familia-neto",
+  "convidados": {
+    "familia-neto": {
+      "nome": "Sr. Carlos Neto e Família",
+      "pessoas": 3
+    },
+    "ana-e-rui-mendes": {
+      "nome": "Ana e Rui Mendes",
+      "pessoas": 2
+    }
+  }
+}
