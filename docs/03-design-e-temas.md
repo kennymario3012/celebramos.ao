@@ -103,6 +103,7 @@ Cada tema é uma pasta com estas imagens (WebP; transparentes, excepto o papel):
 | `grinalda.webp` | 1200 × 520 | Grinalda horizontal para o fundo de uma secção (ou topo, rodada). | ≤ 150 KB |
 | `ilustracao-15.webp` | 1200 × 1000 | Ilustração do fundo da secção Convite (ex.: arco com o «15»). Os últimos ~15–20 % dissolvem-se no papel (máscara). | ≤ 130 KB |
 | ilustração da mensagem (`espelho.webp`, `vestido.webp`…) | 1200 × 1270–1400 | Ilustração da secção Mensagem. **Topo vazio ≥ 16 %** da largura (para o monograma) e fundo dissolvido a partir de ~76–83 %. | ≤ 150 KB |
+| `og.jpg` | 1200 × 630, JPEG | Imagem de partilha (pré-visualização do link no WhatsApp). É composta a partir do kit, sem texto nem dados pessoais (`arte/gerar_og.py`). | ≤ 300 KB |
 
 Regras:
 
@@ -121,6 +122,7 @@ prototipo/arte/
   papel.py       textura de papel: ruído periódico por FFT (manchas, fibras e grão), sem costuras na vertical
   render.py      SVG → PNG transparente com Chromium (Playwright) e as fontes locais
   gerar_arte.py  um procedimento por tema: paleta, composição, máscaras de dissolução e exportação WebP
+  gerar_og.py    imagem de partilha de cada tema (papel, cantos e ilustração, 1200 × 630)
 ```
 
 - **Sementes fixas:** a mesma versão do código gera sempre as mesmas imagens.

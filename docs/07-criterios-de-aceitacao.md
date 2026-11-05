@@ -17,6 +17,17 @@ python3 testes/verificar.py exemplos/exemplo-bela-principe --capturas   # + capt
 
 O script serve a pasta num servidor local, troca as Google Fonts por cópias locais e corre os testes no Chromium (Playwright). Resultado esperado em cada exemplo: `24/24 critérios cumpridos`. O mesmo corre no CI em cada push e pull request ([`.github/workflows/prototipo.yml`](../.github/workflows/prototipo.yml)).
 
+## Como correr (plataforma, `apps/web`)
+
+```bash
+cd apps/web
+npm install && npm run build
+python3 testes/e2e.py            # 40 verificações (convite servido pela plataforma e zona de gestão)
+python3 testes/e2e.py --capturas # + capturas em testes/_capturas/
+```
+
+O script arranca `next start` com armazenamento em ficheiros temporários e os eventos fictícios (PIN 123456). Corre no CI em [`.github/workflows/plataforma.yml`](../.github/workflows/plataforma.yml).
+
 ## Convite
 
 ### Envelope (ecrã de abertura)
@@ -116,6 +127,28 @@ O script serve a pasta num servidor local, troca as Google Fonts por cópias loc
 | CA-PLA-09 | Revogar um link faz com que deixe de funcionar (404) em ≤ 60 s. Um novo link funciona de imediato. |
 | CA-PLA-10 | Arquivar apaga convidados e interacções. Os links respondem 410. |
 | CA-PLA-11 | As permissões da tabela do [05](05-plataforma.md#papéis-e-permissões) são verificadas no servidor (há testes por papel). |
+
+## Zona de gestão de convidados
+
+Implementada em `apps/web` ([decisão 0001](decisoes/0001-gestao-de-convidados-pela-familia.md)). A coluna **Auto** indica o que `apps/web/testes/e2e.py` verifica.
+
+| ID | Critério | Auto |
+|---|---|:-:|
+| CA-GES-01 | Sem sessão, a API responde 401 e o ecrã de entrada só mostra o nome do evento. | ✔ |
+| CA-GES-02 | Um PIN errado é recusado. Ao fim de 10 tentativas erradas, o acesso fica bloqueado 15 minutos, mesmo com o PIN certo. | ✔ |
+| CA-GES-03 | Um pedido de alteração sem o cabeçalho `X-Celebramos` é recusado (403). | ✔ |
+| CA-GES-04 | Um convidado cadastrado (nome, pessoas, WhatsApp, grupo) aparece na lista e no resumo. | ✔ |
+| CA-GES-05 | Colar uma lista mostra a pré-visualização com as linhas inválidas assinaladas e importa só as válidas. | ✔ |
+| CA-GES-06 | Cada convidado tem um link com token de 22 caracteres. O convite pessoal mostra o nome, as pessoas e só esse convidado (CA-PER-01/02/04). | ✔ |
+| CA-GES-07 | «Enviar pelo WhatsApp» abre `wa.me` com o número do convidado e a mensagem com o link, e marca «Enviado». | ✔ |
+| CA-GES-08 | Abrir o convite e tocar em «Confirmar» aparecem no painel («Abriu», «Tocou em confirmar»). «Ver convite» a partir da gestão não conta (CA-RSVP-05). | ✔ |
+| CA-GES-09 | As respostas «Vem», com o número de pessoas, e «Não vem» actualizam o resumo e os filtros. A pesquisa ignora acentos. | ✔ |
+| CA-GES-10 | Editar funciona. Criar um link novo faz o anterior responder 404. Apagar faz o link responder 404 (CA-PLA-09). | ✔ |
+| CA-GES-11 | A mensagem do WhatsApp é editável, tem `{link}` obrigatório e é usada no envio. | ✔ |
+| CA-GES-12 | A exportação CSV para o Excel tem as colunas e os estados (CA-PLA-08). | ✔ |
+| CA-GES-13 | Com 8 cadastros em simultâneo, nenhum se perde. | ✔ |
+| CA-GES-14 | No telemóvel a 320 px não há transbordo, no computador o painel fica centrado, e a consola não tem erros. | ✔ |
+| CA-GES-15 | O convite servido pela plataforma é igual, píxel a píxel, ao convite do protótipo com a mesma configuração (excepto a contagem e o botão de calendário). | |
 
 ## Portar os testes para a plataforma
 

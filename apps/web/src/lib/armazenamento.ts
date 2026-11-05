@@ -1,0 +1,176 @@
+/**
+ * Armazenamento de dados da plataforma.
+ * - Produção (Vercel): Vercel Blob privado, com escrita condicional por ETag (`ifMatch`).
+ * - Desenvolvimento e testes: ficheiros locais em `.dados-locais/` (ou CELEBRAMOS_DADOS_LOCAIS).
+ */
+import crypto from "node:crypto";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { BlobNotFoundError, BlobPreconditionFailedError, get, list, put } from "@vercel/blob";
+
+export class ConflitoEscrita extends Error {
+  constructor() {
+    super("O registo foi alterado entretanto (conflito de escrita).");
+  }
+}
+
+export interface Leitura<T> {
+  dados: T;
+  etag: string;
+}
+
+export interface ItemListado {
+  caminho: string;
+  criadoEm: Date;
+}
+
+export interface Armazenamento {
+  /** `fresco`: ignora caches (leitura da origem). */
+  lerJSON<T>(caminho: string, fresco?: boolean): Promise<Leitura<T> | null>;
+  /** Escreve só se o ETag coincidir (`etag`) ou se ainda não existir (`criar`). Senão: ConflitoEscrita. */
+  escreverJSON(caminho: string, dados: unknown, condicao: { etag?: string; criar?: boolean }): Promise<void>;
+  /** Cria um marcador vazio com sufixo aleatório (registos só de acrescentar). */
+  criarMarcador(caminho: string): Promise<void>;
+  listar(prefixo: string): Promise<ItemListado[]>;
+}
+
+/* ---------------- Vercel Blob (privado) ---------------- */
+
+const blob: Armazenamento = {
+  async lerJSON<T>(caminho: string, fresco = false) {
+    try {
+      const r = await get(caminho, { access: "private", useCache: !fresco });
+      if (!r || r.statusCode !== 200 || !r.stream) return null;
+      const texto = await new Response(r.stream).text();
+      return { dados: JSON.parse(texto) as T, etag: r.blob.etag };
+    } catch (e) {
+      if (e instanceof BlobNotFoundError) return null;
+      throw e;
+    }
+  },
+
+  async escreverJSON(caminho, dados, condicao) {
+    try {
+      await put(caminho, JSON.stringify(dados), {
+        access: "private",
+        contentType: "application/json; charset=utf-8",
+        addRandomSuffix: false,
+        allowOverwrite: !condicao.criar,
+        ifMatch: condicao.criar ? undefined : condicao.etag,
+        cacheControlMaxAge: 60,
+      });
+    } catch (e) {
+      if (e instanceof BlobPreconditionFailedError) throw new ConflitoEscrita();
+      if (condicao.criar && (await blob.lerJSON(caminho, true))) throw new ConflitoEscrita();
+      throw e;
+    }
+  },
+
+  async criarMarcador(caminho) {
+    await put(caminho, "1", { access: "private", contentType: "text/plain", addRandomSuffix: true });
+  },
+
+  async listar(prefixo) {
+    const itens: ItemListado[] = [];
+    let cursor: string | undefined;
+    do {
+      const r = await list({ prefix: prefixo, cursor, limit: 1000 });
+      for (const b of r.blobs) itens.push({ caminho: b.pathname, criadoEm: new Date(b.uploadedAt) });
+      cursor = r.hasMore ? r.cursor : undefined;
+    } while (cursor);
+    return itens;
+  },
+};
+
+/* ---------------- Ficheiros locais (desenvolvimento e testes) ---------------- */
+
+function raizLocal() {
+  return path.resolve(/*turbopackIgnore: true*/ process.env.CELEBRAMOS_DADOS_LOCAIS || path.join(/*turbopackIgnore: true*/ process.cwd(), ".dados-locais"));
+}
+
+function seguro(caminho: string) {
+  const alvo = path.resolve(/*turbopackIgnore: true*/ raizLocal(), caminho);
+  if (!alvo.startsWith(raizLocal() + path.sep)) throw new Error("caminho inválido");
+  return alvo;
+}
+
+const etagDe = (texto: string) => '"' + crypto.createHash("sha1").update(texto).digest("hex") + '"';
+
+/** Comparar o ETag e gravar tem de ser atómico: uma fila por ficheiro (um só processo em desenvolvimento). */
+const filas = new Map<string, Promise<void>>();
+async function emExclusivo<T>(chave: string, fn: () => Promise<T>): Promise<T> {
+  const anterior = filas.get(chave) ?? Promise.resolve();
+  let libertar!: () => void;
+  const minha = anterior.then(() => new Promise<void>((r) => (libertar = r)));
+  filas.set(chave, minha);
+  await anterior;
+  try {
+    return await fn();
+  } finally {
+    libertar();
+    if (filas.get(chave) === minha) filas.delete(chave);
+  }
+}
+
+const ficheiros: Armazenamento = {
+  async lerJSON<T>(caminho: string) {
+    try {
+      const texto = await fs.readFile(/*turbopackIgnore: true*/ seguro(caminho), "utf8");
+      return { dados: JSON.parse(texto) as T, etag: etagDe(texto) };
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw e;
+    }
+  },
+
+  async escreverJSON(caminho, dados, condicao) {
+    const alvo = seguro(caminho);
+    await emExclusivo(alvo, async () => {
+      const actual = await ficheiros.lerJSON(caminho);
+      if (condicao.criar && actual) throw new ConflitoEscrita();
+      if (!condicao.criar && condicao.etag && actual?.etag !== condicao.etag) throw new ConflitoEscrita();
+      await fs.mkdir(/*turbopackIgnore: true*/ path.dirname(alvo), { recursive: true });
+      const temporario = `${alvo}.${crypto.randomBytes(6).toString("hex")}.tmp`;
+      await fs.writeFile(/*turbopackIgnore: true*/ temporario, JSON.stringify(dados));
+      await fs.rename(/*turbopackIgnore: true*/ temporario, alvo);
+    });
+  },
+
+  async criarMarcador(caminho) {
+    const alvo = seguro(`${caminho}-${crypto.randomBytes(8).toString("base64url")}`);
+    await fs.mkdir(/*turbopackIgnore: true*/ path.dirname(alvo), { recursive: true });
+    await fs.writeFile(/*turbopackIgnore: true*/ alvo, "1");
+  },
+
+  async listar(prefixo) {
+    const base = raizLocal();
+    const itens: ItemListado[] = [];
+    async function percorrer(pasta: string) {
+      let entradas;
+      try {
+        entradas = await fs.readdir(/*turbopackIgnore: true*/ pasta, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const e of entradas) {
+        const completo = path.join(/*turbopackIgnore: true*/ pasta, e.name);
+        if (e.isDirectory()) await percorrer(completo);
+        else if (!e.name.endsWith(".tmp")) {
+          const relativo = path.relative(base, completo).split(path.sep).join("/");
+          if (relativo.startsWith(prefixo)) itens.push({ caminho: relativo, criadoEm: (await fs.stat(/*turbopackIgnore: true*/ completo)).mtime });
+        }
+      }
+    }
+    // começa na pasta mais funda que o prefixo garante
+    await percorrer(path.join(/*turbopackIgnore: true*/ base, prefixo.slice(0, prefixo.lastIndexOf("/") + 1)));
+    return itens;
+  },
+};
+
+export function armazenamento(): Armazenamento {
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) return blob;
+  if (process.env.VERCEL) {
+    throw new Error("Armazenamento não configurado: ligar um Blob store privado ao projecto no Vercel.");
+  }
+  return ficheiros;
+}

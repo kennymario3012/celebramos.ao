@@ -1,0 +1,15 @@
+# gerados a partir de prototipo/ (scripts/sincronizar-prototipo.mjs)
+src/convite/gerado/
+public/temas/
+# dados locais de desenvolvimento (armazenamento em ficheiros)
+.dados-locais/
+# eventos reais preparados para carregar (dados pessoais): nunca no git
+eventos-privados/
+.next/
+node_modules/
+next-env.d.ts
+*.tsbuildinfo
+.vercel
+.env*.local
+# capturas dos testes
+testes/_capturas/

@@ -62,7 +62,7 @@ npm run arte                              # todos os temas
 python3 arte/gerar_arte.py bela-principe  # um tema
 ```
 
-Gera `temas/<tema>/*.webp`. Os ficheiros intermédios (SVG, PNG) ficam em `.construcao/`, ignorada pelo git. As sementes são fixas, por isso o resultado é reprodutível. Ver [docs/03](../docs/03-design-e-temas.md#pipeline-de-arte-procedural-no-protótipo).
+Gera `temas/<tema>/*.webp`. A imagem de partilha de cada tema (`og.jpg`, 1200 × 630) gera-se com `python3 arte/gerar_og.py`. Os ficheiros intermédios (SVG, PNG) ficam em `.construcao/`, ignorada pelo git. As sementes são fixas, por isso o resultado é reprodutível. Ver [docs/03](../docs/03-design-e-temas.md#pipeline-de-arte-procedural-no-protótipo).
 
 ## Limitações conhecidas
 

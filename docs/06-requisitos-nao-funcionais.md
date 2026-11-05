@@ -118,7 +118,7 @@ Requisitos:
   <meta property="og:type" content="website">
   <meta property="og:title" content="Convite · 15 Anos de Beatriz Almeida">
   <meta property="og:description" content="Sábado, 15 de Maio de 2027 · Toque para abrir o convite">
-  <meta property="og:image" content="https://celebramos.ao/c/beatriz-15-anos/og.jpg">
+  <meta property="og:image" content="https://celebramos.ao/temas/bela-principe/og.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">

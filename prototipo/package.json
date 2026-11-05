@@ -6,7 +6,8 @@
     "validar": "python3 testes/validar_config.py",
     "construir": "python3 construir.py configs/exemplo-bela-principe.json && python3 construir.py configs/exemplo-jardim-rose.json",
     "testar": "python3 testes/verificar.py exemplos/exemplo-bela-principe && python3 testes/verificar.py exemplos/exemplo-jardim-rose",
-    "arte": "python3 arte/gerar_arte.py"
+    "arte": "python3 arte/gerar_arte.py",
+    "og": "python3 arte/gerar_og.py"
   },
   "devDependencies": {
     "@fontsource/allura": "^5.3.0",
