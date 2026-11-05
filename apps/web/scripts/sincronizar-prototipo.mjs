@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const app = join(dirname(fileURLToPath(import.meta.url)), "..");
 const prototipo = join(app, "..", "..", "prototipo");
 if (!existsSync(join(prototipo, "template.html"))) {
-  console.error("prototipo/ não encontrado: no Vercel, activar «Include files outside the root directory».");
+  console.error("prototipo/ não encontrado: construir a partir do repositório completo (apps/web usa ../../prototipo).");
   process.exit(1);
 }
 

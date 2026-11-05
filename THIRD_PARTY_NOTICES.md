@@ -53,7 +53,6 @@ Todas as fontes estão sob a [SIL Open Font License 1.1](https://openfontlicense
 |---|---|---|
 | Next.js | MIT | Servidor e aplicação. O código cliente vai para o navegador na zona de gestão. |
 | React, React DOM | MIT | Interface da zona de gestão (o convite não usa React). |
-| @vercel/blob | Apache-2.0 | Armazenamento, só no servidor. |
 | TypeScript, tipos `@types/*` | Apache-2.0 / MIT | Só desenvolvimento. |
 
 ## Ferramentas de desenvolvimento (não distribuídas)

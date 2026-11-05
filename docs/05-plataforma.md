@@ -4,7 +4,7 @@ O que se constrói à volta do convite: criar, rever, publicar, enviar e acompan
 
 > Tudo o que está marcado **«a confirmar»** é uma proposta. Antes de implementar, confirmar com o titular do projecto (ver [08](08-roadmap.md#decisões-em-aberto)).
 
-> **Estado (Novembro de 2026):** a primeira parte da plataforma está em [`apps/web`](../apps/web/). Tem o convite servido com links pessoais (token no caminho) e a **zona de gestão de convidados** para a família, com acesso por PIN (ver abaixo e a [decisão 0001](decisoes/0001-gestao-de-convidados-pela-familia.md)). O resto deste documento continua a ser o alvo.
+> **Estado (Novembro de 2026):** a primeira parte da plataforma está em [`apps/web`](../apps/web/). Tem o convite servido com links pessoais (token no caminho) e a **zona de gestão de convidados** para a família, com acesso por PIN ([decisão 0001](decisoes/0001-gestao-de-convidados-pela-familia.md)). Fica alojada no **cPanel** do titular ([decisão 0002](decisoes/0002-alojamento-no-cpanel.md)). O resto deste documento continua a ser o alvo.
 
 ## Módulos
 
@@ -241,8 +241,8 @@ prototipo/           referência (este repositório); a arte procedural continua
 | Linguagem | TypeScript | |
 | Web | Next.js | Painel e back-office em React. O **convite não usa React no cliente** (ver abaixo). |
 | Base de dados | Postgres gerido + ORM com migrações (Drizzle ou Prisma) | `conteudo` e `configuracao` em `jsonb` |
-| Ficheiros | Armazenamento compatível com S3 + CDN | Variantes AVIF/WebP geradas no envio (sharp) |
-| Alojamento | Vercel ou equivalente | Escolher a região com menor latência para Luanda e verificar as regras de transferência internacional ([06](06-requisitos-nao-funcionais.md#privacidade-e-protecção-de-dados)) |
+| Ficheiros | Armazenamento compatível com S3 + CDN (proposta). Hoje são ficheiros no servidor | Variantes AVIF/WebP geradas no envio (sharp) |
+| Alojamento | **Decidido: cPanel do titular** ([0002](decisoes/0002-alojamento-no-cpanel.md)). A proposta original era Vercel ou equivalente | Verificar onde fica o servidor e as regras de transferência internacional ([06](06-requisitos-nao-funcionais.md#privacidade-e-protecção-de-dados)) |
 | Testes | Playwright (aceitação, porta de `verificar.py`), Vitest, axe-core, Lighthouse CI | Ver [07](07-criterios-de-aceitacao.md) |
 | CI | GitHub Actions | O protótipo já tem um fluxo (`.github/workflows/prototipo.yml`) |
 | Erros | Serviço de monitorização de erros (ex.: Sentry) | Sem dados pessoais nos eventos |
@@ -251,12 +251,13 @@ prototipo/           referência (este repositório); a arte procedural continua
 
 | Peça | Em uso |
 |---|---|
-| Aplicação | Next.js 16 em `apps/web` (ainda sem `packages/`). O renderizador está em `src/convite/`. |
+| Alojamento | cPanel do titular (Host2Africa), **Setup Node.js App** (Passenger, Node.js 24), domínio `celebramos.ao` ([decisão 0002](decisoes/0002-alojamento-no-cpanel.md)). |
+| Aplicação | Next.js 16 em `apps/web` (ainda sem `packages/`), em modo `standalone`. O ficheiro de arranque é `server.js` e o renderizador está em `src/convite/`. |
 | Template do convite | O do protótipo, copiado na construção (`scripts/sincronizar-prototipo.mjs`). |
-| Dados | Vercel Blob **privado** em `cpt1`, com escrita condicional por ETag. Em desenvolvimento, ficheiros em `.dados-locais/`. |
-| Eventos | `eventos/{slug}/evento.json` no Blob, ou a variável `CELEBRAMOS_EVENTOS`. São preparados com `scripts/preparar-evento.mjs`. |
-| Funções | Região `cpt1` (`vercel.json`). |
-| Testes | `apps/web/testes/e2e.py` (Playwright) no CI (`.github/workflows/plataforma.yml`). |
+| Dados | Ficheiros JSON em `CELEBRAMOS_DADOS`, fora da aplicação, com escrita condicional por ETag e bloqueio entre processos. |
+| Eventos | `CELEBRAMOS_DADOS/eventos/{slug}/evento.json`, ou a variável `CELEBRAMOS_EVENTOS`. São preparados com `scripts/preparar-evento.mjs`. |
+| Construção e publicação | O CI constrói e testa o pacote (artefacto `celebramos-web`), que se envia para o cPanel. Nada é construído no servidor. |
+| Testes | `apps/web/testes/e2e.py` (Playwright), contra o próprio pacote em 2 processos, no CI (`.github/workflows/plataforma.yml`). |
 
 ### O renderizador do convite
 

@@ -30,7 +30,14 @@ Actualizado em Novembro de 2026. A pedido do primeiro cliente real, a **zona de 
 | E5-S4 | Parcial | CSV para o Excel. Ficheiro `.xlsx`: por fazer |
 | E5-S5 | Parcial | PIN por evento em vez de contas e papéis |
 
-Próximos passos sugeridos: E3 (back-office, para não editar JSON à mão), E1-S2 (textos no servidor), E8-S4 (parecer jurídico), E5-S3 (lembretes).
+Próximos passos sugeridos:
+
+1. **Pôr no ar no cPanel**: certificado TLS válido e primeira publicação, como em `apps/web/README.md`.
+2. Publicação automática por SSH a partir do CI (E0-S3).
+3. E3 (back-office, para não editar JSON à mão).
+4. E1-S2 (textos no servidor).
+5. E8-S4 (parecer jurídico).
+6. E5-S3 (lembretes).
 
 ## E0 · Fundações
 
@@ -141,8 +148,8 @@ Para o titular do projecto decidir. Quando uma decisão for tomada, registá-la 
 
 | # | Decisão | Opções | Proposta | Bloqueia |
 |---|---|---|---|---|
-| D1 | Stack | Next.js + Postgres + S3 / outra | A do [05](05-plataforma.md#arquitectura-proposta). **Em uso em `apps/web`:** Next.js com Vercel Blob em vez de Postgres (decisão 0001). Confirmar se fica | E0 |
-| D2 | Alojamento e região | Europa, África do Sul, Angola | **Em uso:** Vercel, região `cpt1` (Cidade do Cabo). Medir a latência a partir de Luanda e confirmar com o parecer da E8-S4 | E0-S3, E8-S4 |
+| D1 | Stack | Next.js + Postgres + S3 / outra | A do [05](05-plataforma.md#arquitectura-proposta). **Em uso em `apps/web`:** Next.js com ficheiros JSON no servidor em vez de Postgres (decisões 0001 e 0002). Confirmar quando houver vários eventos em simultâneo | E0 |
+| D2 | Alojamento e região | Europa, África do Sul, Angola | **Decidido:** cPanel do titular, Host2Africa ([decisão 0002](decisoes/0002-alojamento-no-cpanel.md)). Confirmar com o fornecedor que o servidor está em Angola | E8-S4 |
 | D3 | Entrada dos anfitriões | Código por SMS, por WhatsApp, email | **Decidido para já:** PIN por evento para a família (decisão 0001). Depois, código por telemóvel com email como alternativa | E5-S5 |
 | D4 | Confirmação | Só WhatsApp / formulário no convite + WhatsApp | WhatsApp no MVP, formulário na fase 2 | E5, E10 |
 | D5 | Retenção dos dados dos convidados | 30, 90 ou 180 dias depois do evento | 90 dias | E8-S2 |

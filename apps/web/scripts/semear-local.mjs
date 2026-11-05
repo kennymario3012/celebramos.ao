@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const app = join(dirname(fileURLToPath(import.meta.url)), "..");
-const raiz = process.env.CELEBRAMOS_DADOS_LOCAIS || join(app, ".dados-locais");
+const raiz = process.env.CELEBRAMOS_DADOS || join(app, ".dados-locais");
 const PIN = process.env.PIN || "123456";
 
 function criarPin(pin) {

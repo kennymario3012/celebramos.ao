@@ -82,9 +82,12 @@ cd apps/web
 npm install
 npm run semear         # eventos fictícios em .dados-locais/ (PIN 123456)
 npm run dev            # http://localhost:3000/gestao/exemplo-bela-principe
-npm run tipos && npm run build
-python3 testes/e2e.py  # 40 verificações (convite e zona de gestão)
+npm run tipos
+npm run pacote         # build + pacote do cPanel em dist/celebramos-web (server.js)
+python3 testes/e2e.py  # 40 verificações, contra o pacote em 2 processos
 ```
+
+A plataforma fica alojada no **cPanel** do titular ([decisão 0002](docs/decisoes/0002-alojamento-no-cpanel.md)): Node.js com Passenger e dados em ficheiros fora da aplicação (`CELEBRAMOS_DADOS`). Nada de dependências que exijam serviços externos sem decisão do titular.
 
 Eventos reais preparam-se com `node scripts/preparar-evento.mjs <config.json>`. O resultado vai para `apps/web/eventos-privados/`, que o git ignora, e **nunca** entra no repositório.
 

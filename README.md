@@ -12,7 +12,7 @@
 
 - ✅ **Experiência do convite** especificada e implementada num **protótipo de referência**, validado com um cliente real (festa de 15 anos, Novembro de 2026).
 - ✅ **Especificação da plataforma**: produto, modelo de dados, plataforma, requisitos, critérios de aceitação e roadmap.
-- ✅ **Primeira parte da plataforma** ([`apps/web`](apps/web/)): o convite servido com links pessoais e a **zona de gestão de convidados**. Nela, a família entra com um PIN, cadastra os convidados, envia cada link pelo WhatsApp e acompanha quem abriu e quem vem.
+- ✅ **Primeira parte da plataforma** ([`apps/web`](apps/web/)): o convite servido com links pessoais e a **zona de gestão de convidados**. Nela, a família entra com um PIN, cadastra os convidados, envia cada link pelo WhatsApp e acompanha quem abriu e quem vem. Fica alojada no cPanel de `celebramos.ao`.
 - ⬜ **Resto da plataforma** (back-office do operador, contas, self-service, pagamentos): por construir. Ver o «Estado» no [roadmap](docs/08-roadmap.md#estado).
 
 ## Para quem desenvolve

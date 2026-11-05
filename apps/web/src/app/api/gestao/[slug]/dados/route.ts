@@ -18,7 +18,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   }
   const cfg = a.evento.configuracao;
   try {
-    const [{ lista }, actividade] = await Promise.all([lerLista(slug, true), lerActividade(slug)]);
+    const [{ lista }, actividade] = await Promise.all([lerLista(slug), lerActividade(slug)]);
     const origem = origemPublica(req);
     return json({
       evento: {

@@ -13,7 +13,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const { slug } = await params;
   const a = await autorizar(req, slug);
   if ("resposta" in a) return a.resposta;
-  const [{ lista }, actividade] = await Promise.all([lerLista(slug, true), lerActividade(slug)]);
+  const [{ lista }, actividade] = await Promise.all([lerLista(slug), lerActividade(slug)]);
   const origem = origemPublica(req);
   const linhas: (string | number | undefined)[][] = [
     ["Nome", "Pessoas", "Telefone", "Grupo", "Estado", "Pessoas confirmadas", "Enviado em", "Aberto em", "Tocou em confirmar", "Notas", "Link"],

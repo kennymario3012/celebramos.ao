@@ -10,7 +10,7 @@ Aplicação Next.js com duas coisas:
    - marcar as respostas;
    - exportar para Excel.
 
-A experiência do convite vem do protótipo. `scripts/sincronizar-prototipo.mjs` copia `prototipo/template.html`, `icones.json` e os temas antes de `dev` e de `build`, e o protótipo continua a ser a fonte única.
+A experiência do convite vem do protótipo. `scripts/sincronizar-prototipo.mjs` copia `prototipo/template.html`, `icones.json` e os temas antes de `dev` e de `build`, e o protótipo continua a ser a fonte única. A aplicação fica alojada no **cPanel** ([decisão 0002](../../docs/decisoes/0002-alojamento-no-cpanel.md)).
 
 ![Zona de gestão](../../docs/img/gestao-03-lista.webp)
 
@@ -23,13 +23,13 @@ npm run semear          # eventos fictícios em .dados-locais/ (PIN 123456)
 npm run dev             # http://localhost:3000/gestao/exemplo-bela-principe
 ```
 
-Sem variáveis de ambiente, os dados ficam em ficheiros (`.dados-locais/`, ignorado pelo git).
+Em desenvolvimento, sem `CELEBRAMOS_DADOS`, os dados ficam em `.dados-locais/` (ignorado pelo git).
 
 ## Testes
 
 ```bash
-npm run build
-python3 testes/e2e.py             # 40 verificações: convite, acesso, concorrência, interface, exportação, bloqueio
+npm run pacote                    # next build + pacote do cPanel em dist/celebramos-web
+python3 testes/e2e.py             # 40 verificações contra o pacote, a correr em 2 processos com os mesmos dados
 python3 testes/e2e.py --capturas  # + capturas em testes/_capturas/
 ```
 
@@ -37,44 +37,80 @@ Precisam do Playwright para Python com o Chromium (como os testes do protótipo)
 
 ## Dados
 
-| Onde | O quê |
+Ficheiros JSON na pasta `CELEBRAMOS_DADOS`, **fora da pasta da aplicação**, para sobreviverem às actualizações:
+
+| Caminho | O quê |
 |---|---|
 | `eventos/{slug}/evento.json` | Evento: a configuração do convite (docs/04 §1), `gestao.pin` (hash scrypt do PIN da família) e `linkGeralActivo`. |
-| `eventos/{slug}/convidados.json` | Lista de convidados e mensagem de envio. É gravada com concorrência optimista (ETag). |
+| `eventos/{slug}/convidados.json` | Lista de convidados e mensagem de envio. É gravada com concorrência optimista (ETag) e bloqueio entre processos. |
 | `eventos/{slug}/actividade/{token}/{tipo}-{ms}-…` | Marcadores vazios de «aberto» e «confirmar». O painel agrega-os só pelos nomes. |
 | `eventos/{slug}/seguranca.json` | Tentativas de PIN falhadas (bloqueio de 15 minutos ao fim de 10). |
 | `sistema/segredo-sessao.json` | Segredo de assinatura das sessões, se `SEGREDO_SESSAO` não estiver definido. |
-
-- **Produção:** Vercel Blob **privado**.
-- **Desenvolvimento:** ficheiros em `.dados-locais/`.
-- Os eventos também podem vir da variável `CELEBRAMOS_EVENTOS`, com o JSON `{ "<slug>": evento }`. O armazenamento tem prioridade.
 
 **Dados reais nunca entram no repositório.** Para preparar um evento real:
 
 ```bash
 node scripts/preparar-evento.mjs caminho/para/config.json [--pin 123456]
-# → eventos-privados/<slug>.evento.json e eventos-privados/CELEBRAMOS_EVENTOS.json (ignorados pelo git)
+# → eventos-privados/<slug>.evento.json (ignorado pelo git): enviar para CELEBRAMOS_DADOS/eventos/<slug>/evento.json
 ```
 
-## Vercel
+## Publicar no cPanel
 
-| Definição | Valor |
-|---|---|
-| Root Directory | `apps/web` |
-| Include files outside the root directory | ligado (a construção lê `prototipo/`) |
-| Região das funções | `cpt1`, Cidade do Cabo (`vercel.json`) |
-| Armazenamento | Blob **privado** em `cpt1`, ligado ao projecto (cria `BLOB_READ_WRITE_TOKEN`) |
+O servidor só **corre** a aplicação: o pacote chega pronto, sem `npm install` nem `next build` no cPanel. A conta tem 1 GB de memória, que não chega com segurança para construir.
 
-Variáveis de ambiente:
+### 1. Obter o pacote
 
-| Variável | Para quê |
-|---|---|
-| `CELEBRAMOS_EVENTOS` | (opcional) Eventos em JSON, se não estiverem no Blob. |
-| `SEGREDO_SESSAO` | (opcional) Segredo das sessões. Sem ela, é gerado e guardado no Blob. |
-| `URL_PUBLICO` | (opcional) Domínio próprio dos links (ex.: `https://celebramos.ao`). |
+- **Do GitHub (recomendado):** separador **Actions** → workflow «Plataforma» → execução mais recente do `main` → **Artifacts** → `celebramos-web` (ZIP).
+- **Ou localmente:** `npm run pacote`. O pacote fica em `dist/celebramos-web/`.
+
+O pacote tem `server.js`, `.next/` (pasta escondida: copiá-la também), `public/`, `node_modules/` (só o necessário) e `LEIA-ME.txt`.
+
+### 2. Primeira vez
+
+1. **Certificado TLS válido** para o domínio (SSL/TLS no cPanel, AutoSSL ou pelo fornecedor). Com um certificado auto-assinado, os convidados vêem avisos de segurança.
+2. **Gestor de ficheiros:** criar
+   - `/home/<utilizador>/celebramos-web`, a aplicação;
+   - `/home/<utilizador>/celebramos-dados/eventos/<slug>/`, os dados.
+
+   Enviar o ZIP do pacote para `celebramos-web` e extrair. Enviar o `evento.json` de cada evento para a pasta dele.
+3. **Setup Node.js App → Criar aplicação:**
+
+   | Campo | Valor |
+   |---|---|
+   | Versão do Node.js | 24 (recomendado; mínimo 20) |
+   | Modo de aplicação | Production |
+   | Raiz da aplicação | `celebramos-web` |
+   | URL da aplicação | `celebramos.ao` (raiz do domínio) |
+   | Ficheiro de arranque | `server.js` |
+   | Ficheiro de registo Passenger | `/home/<utilizador>/logs/celebramos.log` |
+
+   Variáveis de ambiente:
+
+   | Variável | Valor |
+   |---|---|
+   | `CELEBRAMOS_DADOS` | `/home/<utilizador>/celebramos-dados` (**obrigatória**) |
+   | `URL_PUBLICO` | `https://celebramos.ao` (links enviados aos convidados) |
+   | `SEGREDO_SESSAO` | (opcional) Sem ela, é gerado e guardado nos dados. |
+
+   **Não** carregar em «Run NPM Install».
+4. Iniciar a aplicação e abrir `https://celebramos.ao/gestao/<slug>`. Deve aparecer o ecrã do PIN.
+
+### 3. Actualizar
+
+1. Descarregar o pacote novo e extraí-lo por cima de `celebramos-web`. Apagar antes a pasta `.next` antiga, para não ficarem ficheiros de versões anteriores. Os dados em `celebramos-dados` não se tocam.
+2. **Setup Node.js App → Restart.**
+3. **Clear Cache** do NGINX (página inicial do cPanel).
+
+### Problemas
+
+- **Erro 500 em todas as páginas:** confirmar `CELEBRAMOS_DADOS`. Em produção é obrigatória, e o registo do Passenger mostra «Definir CELEBRAMOS_DADOS».
+- **«Convite não encontrado»:** o `evento.json` não está em `CELEBRAMOS_DADOS/eventos/<slug>/` ou tem JSON inválido.
+- **Alterações que não aparecem:** reiniciar a aplicação e limpar a cache do NGINX. O evento fica em memória até 60 s.
+- **Cópias de segurança:** a pasta `celebramos-dados` entra nos backups da conta (JetBackup). Antes de mexer à mão, exportar a lista na zona de gestão.
 
 ## Limitações conhecidas
 
-- A configuração do evento ainda não se edita na interface: muda-se no Blob ou em `CELEBRAMOS_EVENTOS`. É o back-office do operador, E3 do roadmap.
+- A configuração do evento ainda não se edita na interface: muda-se o `evento.json` à mão. É o back-office do operador, E3 do roadmap.
 - Os textos do convite continuam a ser preenchidos por JavaScript, porque o template vem do protótipo. O HTML final gerado no servidor fica para a E1-S2.
 - Um só PIN por evento: todos os familiares usam o mesmo. Contas e papéis ficam para a E5-S5.
+- Os dados ficam em ficheiros num servidor. Para vários servidores, passar para uma base de dados: a interface em `src/lib/armazenamento.ts` permite trocar.

@@ -1,7 +1,8 @@
 """Testes ponta a ponta da zona de gestão de convidados e do convite servido pela plataforma.
 
-Uso (a partir de apps/web, depois de `npm run build`):
-    python3 testes/e2e.py            # arranca `next start` com armazenamento em ficheiros temporários
+Uso (a partir de apps/web, depois de `npm run pacote`):
+    python3 testes/e2e.py            # arranca o pacote do cPanel (dist/celebramos-web/server.js) duas vezes,
+                                     # com a mesma pasta de dados temporária (como vários processos do Passenger)
     python3 testes/e2e.py --capturas # grava capturas em testes/_capturas/
 
 Usa os eventos fictícios do protótipo (PIN 123456) e números de telefone fictícios.
@@ -26,7 +27,10 @@ from playwright.sync_api import sync_playwright
 APP = Path(__file__).resolve().parent.parent
 FONTES = APP.parent.parent / "prototipo" / "node_modules" / "@fontsource"
 PORTA = 3107
+PORTA2 = 3108  # segundo processo com os mesmos dados
 BASE = f"http://127.0.0.1:{PORTA}"
+BASE2 = f"http://127.0.0.1:{PORTA2}"
+SERVIDOR = APP / "dist" / "celebramos-web" / "server.js"
 SLUG = "exemplo-bela-principe"
 PIN = "123456"
 TEL_FAMILIA = "244900000000"  # fictício
@@ -42,13 +46,13 @@ class Relatorio:
         print(("  PASSA  " if cond else "  FALHA  ") + nome + (f" — {detalhe}" if detalhe and not cond else ""))
 
 
-def pedido(caminho, metodo="GET", corpo=None, cookie=None, cabecalhos=None):
+def pedido(caminho, metodo="GET", corpo=None, cookie=None, cabecalhos=None, base=None):
     h = {"Content-Type": "application/json"}
     if cookie:
         h["Cookie"] = cookie
     h.update(cabecalhos or {})
     dados = json.dumps(corpo).encode() if corpo is not None else None
-    req = urllib.request.Request(BASE + caminho, data=dados, method=metodo, headers=h)
+    req = urllib.request.Request((base or BASE) + caminho, data=dados, method=metodo, headers=h)
     try:
         with urllib.request.urlopen(req) as r:
             return r.status, {k.lower(): v for k, v in r.headers.items()}, r.read()
@@ -63,7 +67,7 @@ def entrar(pin=PIN, slug=SLUG):
 
 
 def preparar_dados(pasta):
-    env = {**os.environ, "CELEBRAMOS_DADOS_LOCAIS": str(pasta), "PIN": PIN}
+    env = {**os.environ, "CELEBRAMOS_DADOS": str(pasta), "PIN": PIN}
     subprocess.run(["node", "scripts/semear-local.mjs"], cwd=APP, env=env, check=True, capture_output=True)
     # botão de confirmação com um número fictício, para testar o registo do toque em «Confirmar»
     ev = pasta / "eventos" / SLUG / "evento.json"
@@ -110,30 +114,38 @@ def pagina(browser, w=375, h=812, movel=True):
 
 def main(capturas=False):
     R = Relatorio()
-    try:
-        urllib.request.urlopen(BASE + "/robots.txt", timeout=1)
-        sys.exit(f"A porta {PORTA} já está ocupada: terminar o servidor antigo primeiro.")
-    except urllib.error.URLError:
-        pass
+    if not SERVIDOR.exists():
+        sys.exit("Falta o pacote: correr `npm run pacote` primeiro.")
+    for base in (BASE, BASE2):
+        try:
+            urllib.request.urlopen(base + "/robots.txt", timeout=1)
+            sys.exit(f"{base} já está ocupado: terminar o servidor antigo primeiro.")
+        except urllib.error.URLError:
+            pass
     dados = Path(tempfile.mkdtemp(prefix="celebramos-e2e-"))
     preparar_dados(dados)
-    env = {**os.environ, "CELEBRAMOS_DADOS_LOCAIS": str(dados), "NEXT_TELEMETRY_DISABLED": "1"}
-    # o próprio processo do servidor (não o npx), num grupo próprio, para o terminar de vez no fim
-    servidor = subprocess.Popen(["node", "node_modules/next/dist/bin/next", "start", "-p", str(PORTA), "-H", "127.0.0.1"],
-                                cwd=APP, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    servidores = []
+    for porta in (PORTA, PORTA2):
+        env = {**os.environ, "CELEBRAMOS_DADOS": str(dados), "NODE_ENV": "production", "PORT": str(porta),
+               "HOSTNAME": "127.0.0.1", "NEXT_TELEMETRY_DISABLED": "1"}
+        # cada servidor num grupo de processos próprio, para o terminar de vez no fim
+        servidores.append(subprocess.Popen(["node", str(SERVIDOR)], cwd=SERVIDOR.parent, env=env,
+                                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True))
     try:
-        for _ in range(60):
-            try:
-                urllib.request.urlopen(BASE + "/robots.txt", timeout=1)
-                break
-            except Exception:
-                time.sleep(0.5)
+        for base in (BASE, BASE2):
+            for _ in range(60):
+                try:
+                    urllib.request.urlopen(base + "/robots.txt", timeout=1)
+                    break
+                except Exception:
+                    time.sleep(0.5)
         if capturas:
             CAPTURAS.mkdir(exist_ok=True)
         correr(R, capturas)
     finally:
-        os.killpg(servidor.pid, signal.SIGTERM)
-        servidor.wait(timeout=10)
+        for s in servidores:
+            os.killpg(s.pid, signal.SIGTERM)
+            s.wait(timeout=10)
         shutil.rmtree(dados, ignore_errors=True)
     falhas = [n for ok, n in R.itens if not ok]
     print(f"\n{len(R.itens) - len(falhas)}/{len(R.itens)} verificações cumpridas")
@@ -164,15 +176,15 @@ def correr(R, capturas):
     estado, cookie, _ = entrar()
     R.ok("PIN certo: sessão em cookie HttpOnly", estado == 200 and cookie.startswith("cg_"))
 
-    print("Zona de gestão: concorrência")
+    print("Zona de gestão: concorrência (dois processos, os mesmos dados)")
     def criar(i):
         return pedido(f"/api/gestao/{SLUG}/convidados", "POST", {"nome": f"Convidado paralelo {i}", "pessoas": 2},
-                      cookie=cookie, cabecalhos={"X-Celebramos": "1"})[0]
-    with concurrent.futures.ThreadPoolExecutor(8) as ex:
-        estados = list(ex.map(criar, range(8)))
+                      cookie=cookie, cabecalhos={"X-Celebramos": "1"}, base=BASE if i % 2 else BASE2)[0]
+    with concurrent.futures.ThreadPoolExecutor(12) as ex:
+        estados = list(ex.map(criar, range(12)))
     _, _, corpo = pedido(f"/api/gestao/{SLUG}/dados", cookie=cookie)
     nomes = [c["nome"] for c in json.loads(corpo)["convidados"]]
-    R.ok("8 cadastros em simultâneo: nenhum se perde", estados == [201] * 8 and sum(n.startswith("Convidado paralelo") for n in nomes) == 8,
+    R.ok("12 cadastros em simultâneo em 2 processos: nenhum se perde", estados == [201] * 12 and sum(n.startswith("Convidado paralelo") for n in nomes) == 12,
          f"estados={estados} gravados={sum(n.startswith('Convidado paralelo') for n in nomes)}")
     for c in json.loads(corpo)["convidados"]:
         pedido(f"/api/gestao/{SLUG}/convidados/{c['token']}", "DELETE", cookie=cookie, cabecalhos={"X-Celebramos": "1"})

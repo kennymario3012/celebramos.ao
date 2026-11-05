@@ -13,3 +13,4 @@ next-env.d.ts
 .env*.local
 # capturas dos testes
 testes/_capturas/
+dist/

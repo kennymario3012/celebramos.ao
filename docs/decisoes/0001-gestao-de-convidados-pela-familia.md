@@ -1,6 +1,6 @@
 # 0001 · Gestão de convidados pela própria família
 
-- **Estado:** aceite (Novembro de 2026)
+- **Estado:** aceite (Novembro de 2026). O alojamento e o armazenamento (ponto 4) foram **substituídos pela [decisão 0002](0002-alojamento-no-cpanel.md)**: cPanel e ficheiros no servidor, em vez de Vercel e Vercel Blob.
 - **Decidiu:** titular do projecto, a partir do pedido do primeiro cliente real
 - **Afecta:** [01](../01-produto.md#decisões-validadas), [04](../04-modelo-de-dados.md#8-implementação-actual-appsweb), [05](../05-plataforma.md#zona-de-gestão-de-convidados), [07](../07-criterios-de-aceitacao.md#zona-de-gestão-de-convidados), [08](../08-roadmap.md#estado)
 

@@ -307,9 +307,9 @@ Rotas públicas: ver [05](05-plataforma.md#rotas-públicas).
 
 ## 8. Implementação actual (apps/web)
 
-A primeira parte da plataforma ([decisão 0001](decisoes/0001-gestao-de-convidados-pela-familia.md)) usa um modelo simplificado, guardado como documentos JSON no Vercel Blob privado. Equivale a um subconjunto do §5: ainda não há `utilizador`, `membro_evento` nem `versao`.
+A primeira parte da plataforma ([decisões 0001](decisoes/0001-gestao-de-convidados-pela-familia.md) e [0002](decisoes/0002-alojamento-no-cpanel.md)) usa um modelo simplificado, guardado como **ficheiros JSON** na pasta `CELEBRAMOS_DADOS` do servidor, fora da aplicação. Equivale a um subconjunto do §5: ainda não há `utilizador`, `membro_evento` nem `versao`.
 
-| Caminho no armazenamento | Corresponde a | Conteúdo |
+| Caminho (dentro de `CELEBRAMOS_DADOS`) | Corresponde a | Conteúdo |
 |---|---|---|
 | `eventos/{slug}/evento.json` | `evento` (+ `tema`) | `{configuracao, linkGeralActivo, gestao: {pin: {sal, hash}, mensagemEnvio?}}`. A `configuracao` segue o §1. |
 | `eventos/{slug}/convidados.json` | `convidado` | `{versao: 1, mensagemEnvio?, convidados: [{token, nome, pessoas, telefone?, grupo?, notas?, estado, pessoasConfirmadas?, enviadoEm?, criadoEm, actualizadoEm}]}` |
@@ -317,7 +317,7 @@ A primeira parte da plataforma ([decisão 0001](decisoes/0001-gestao-de-convidad
 | `eventos/{slug}/seguranca.json` | — | Tentativas de PIN falhadas nos últimos 15 minutos. |
 | `sistema/segredo-sessao.json` | — | Segredo das sessões (se não houver `SEGREDO_SESSAO`). |
 
-- `convidados.json` é gravado com **concorrência optimista**: lê com ETag e grava com `ifMatch`. Se houver conflito, repete com a versão nova (até 6 vezes).
+- `convidados.json` é gravado com **concorrência optimista**: o ETag é o SHA-1 do conteúdo, e a gravação só acontece se ainda for o lido. Se houver conflito, repete com a versão nova (até 6 vezes). Comparar e gravar acontece sob um **bloqueio entre processos** (`<ficheiro>.bloqueio`, criado de forma atómica). A gravação faz-se num ficheiro temporário que depois muda de nome, por isso quem lê nunca vê um ficheiro a meio.
 - `estado` ∈ `pendente` · `confirmado` · `recusado`. `pessoasConfirmadas` só existe com `confirmado` (por omissão, `pessoas`).
 - `telefone` fica em formato internacional só com dígitos (`2449XXXXXXXX`). Um número angolano de 9 algarismos ganha o `244`.
-- Os eventos também podem vir da variável de ambiente `CELEBRAMOS_EVENTOS` (`{ "<slug>": evento }`). O armazenamento tem prioridade.
+- Os eventos também podem vir da variável de ambiente `CELEBRAMOS_EVENTOS` (`{ "<slug>": evento }`). Os ficheiros têm prioridade.

@@ -10,8 +10,8 @@ const listaVazia = (): ListaConvidados => ({ versao: 1, convidados: [] });
 
 export class ErroValidacao extends Error {}
 
-export async function lerLista(slug: string, fresco = true) {
-  const lido = await armazenamento().lerJSON<ListaConvidados>(caminhoLista(slug), fresco);
+export async function lerLista(slug: string) {
+  const lido = await armazenamento().lerJSON<ListaConvidados>(caminhoLista(slug));
   return { lista: lido?.dados ?? listaVazia(), etag: lido?.etag ?? null };
 }
 
@@ -21,7 +21,7 @@ export async function lerLista(slug: string, fresco = true) {
  */
 export async function alterarLista<T>(slug: string, alterar: (lista: ListaConvidados) => T): Promise<{ lista: ListaConvidados; resultado: T }> {
   for (let tentativa = 0; tentativa < 6; tentativa++) {
-    const { lista, etag } = await lerLista(slug, true);
+    const { lista, etag } = await lerLista(slug);
     const resultado = alterar(lista);
     try {
       await armazenamento().escreverJSON(caminhoLista(slug), lista, etag ? { etag } : { criar: true });
@@ -34,15 +34,11 @@ export async function alterarLista<T>(slug: string, alterar: (lista: ListaConvid
   throw new Error("Muitas alterações ao mesmo tempo. Tente outra vez.");
 }
 
-/** Procura o convidado de um link pessoal: primeiro com cache, depois na origem (convidado acabado de criar). */
+/** Procura o convidado de um link pessoal. */
 export async function procurarConvidado(slug: string, token: string): Promise<Convidado | null> {
   if (!TOKEN_VALIDO.test(token)) return null;
-  for (const fresco of [false, true]) {
-    const { lista } = await lerLista(slug, fresco);
-    const c = lista.convidados.find((x) => x.token === token);
-    if (c) return c;
-  }
-  return null;
+  const { lista } = await lerLista(slug);
+  return lista.convidados.find((x) => x.token === token) ?? null;
 }
 
 /* ---------------- validação dos dados vindos da zona de gestão ---------------- */

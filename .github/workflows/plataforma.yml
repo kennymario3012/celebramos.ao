@@ -41,12 +41,21 @@ jobs:
           npm run sincronizar
           npm run tipos
 
-      - name: Construir
+      - name: Construir o pacote do cPanel
         working-directory: apps/web
-        run: npm run build
+        run: npm run pacote
         env:
           NEXT_TELEMETRY_DISABLED: "1"
 
-      - name: Testes ponta a ponta (zona de gestão e convite)
+      - name: Testes ponta a ponta (pacote em 2 processos, zona de gestão e convite)
         working-directory: apps/web
         run: python testes/e2e.py
+
+      # o pacote testado fica disponível para enviar para o cPanel (Actions → esta execução → Artifacts)
+      - name: Guardar o pacote
+        uses: actions/upload-artifact@v4
+        with:
+          name: celebramos-web
+          path: apps/web/dist/celebramos-web
+          include-hidden-files: true
+          retention-days: 30

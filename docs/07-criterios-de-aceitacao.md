@@ -21,12 +21,12 @@ O script serve a pasta num servidor local, troca as Google Fonts por cópias loc
 
 ```bash
 cd apps/web
-npm install && npm run build
+npm install && npm run pacote
 python3 testes/e2e.py            # 40 verificações (convite servido pela plataforma e zona de gestão)
 python3 testes/e2e.py --capturas # + capturas em testes/_capturas/
 ```
 
-O script arranca `next start` com armazenamento em ficheiros temporários e os eventos fictícios (PIN 123456). Corre no CI em [`.github/workflows/plataforma.yml`](../.github/workflows/plataforma.yml).
+O script arranca o **próprio pacote do cPanel** (`dist/celebramos-web/server.js`) em dois processos, com a mesma pasta de dados temporária (como vários processos do Passenger) e os eventos fictícios (PIN 123456). Corre no CI em [`.github/workflows/plataforma.yml`](../.github/workflows/plataforma.yml), que guarda o pacote testado como artefacto.
 
 ## Convite
 
@@ -146,7 +146,7 @@ Implementada em `apps/web` ([decisão 0001](decisoes/0001-gestao-de-convidados-p
 | CA-GES-10 | Editar funciona. Criar um link novo faz o anterior responder 404. Apagar faz o link responder 404 (CA-PLA-09). | ✔ |
 | CA-GES-11 | A mensagem do WhatsApp é editável, tem `{link}` obrigatório e é usada no envio. | ✔ |
 | CA-GES-12 | A exportação CSV para o Excel tem as colunas e os estados (CA-PLA-08). | ✔ |
-| CA-GES-13 | Com 8 cadastros em simultâneo, nenhum se perde. | ✔ |
+| CA-GES-13 | Com 12 cadastros em simultâneo, repartidos por 2 processos com os mesmos dados, nenhum se perde. | ✔ |
 | CA-GES-14 | No telemóvel a 320 px não há transbordo, no computador o painel fica centrado, e a consola não tem erros. | ✔ |
 | CA-GES-15 | O convite servido pela plataforma é igual, píxel a píxel, ao convite do protótipo com a mesma configuração (excepto a contagem e o botão de calendário). | |
 

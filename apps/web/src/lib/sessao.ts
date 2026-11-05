@@ -18,14 +18,14 @@ async function segredo(): Promise<Buffer> {
   if (process.env.SEGREDO_SESSAO) return (segredoEmCache = Buffer.from(process.env.SEGREDO_SESSAO));
   const caminho = "sistema/segredo-sessao.json";
   const a = armazenamento();
-  let lido = await a.lerJSON<{ segredo: string }>(caminho, true);
+  let lido = await a.lerJSON<{ segredo: string }>(caminho);
   if (!lido) {
     try {
       await a.escreverJSON(caminho, { segredo: crypto.randomBytes(32).toString("base64url") }, { criar: true });
     } catch (e) {
       if (!(e instanceof ConflitoEscrita)) throw e;
     }
-    lido = await a.lerJSON<{ segredo: string }>(caminho, true);
+    lido = await a.lerJSON<{ segredo: string }>(caminho);
   }
   if (!lido) throw new Error("Não foi possível obter o segredo de sessão.");
   return (segredoEmCache = Buffer.from(lido.dados.segredo, "base64url"));
@@ -87,7 +87,7 @@ export async function sessaoValida(req: Request, evento: Evento) {
 const caminhoSeguranca = (slug: string) => `eventos/${slug}/seguranca.json`;
 
 export async function bloqueado(slug: string) {
-  const lido = await armazenamento().lerJSON<{ falhas: number[] }>(caminhoSeguranca(slug), true);
+  const lido = await armazenamento().lerJSON<{ falhas: number[] }>(caminhoSeguranca(slug));
   const recentes = (lido?.dados.falhas ?? []).filter((t) => t > Date.now() - JANELA_FALHAS_MS);
   return recentes.length >= MAX_FALHAS;
 }
@@ -95,7 +95,7 @@ export async function bloqueado(slug: string) {
 export async function registarFalha(slug: string) {
   const a = armazenamento();
   for (let i = 0; i < 3; i++) {
-    const lido = await a.lerJSON<{ falhas: number[] }>(caminhoSeguranca(slug), true);
+    const lido = await a.lerJSON<{ falhas: number[] }>(caminhoSeguranca(slug));
     const falhas = (lido?.dados.falhas ?? []).filter((t) => t > Date.now() - JANELA_FALHAS_MS);
     falhas.push(Date.now());
     try {
@@ -109,7 +109,7 @@ export async function registarFalha(slug: string) {
 
 export async function limparFalhas(slug: string) {
   const a = armazenamento();
-  const lido = await a.lerJSON<{ falhas: number[] }>(caminhoSeguranca(slug), true);
+  const lido = await a.lerJSON<{ falhas: number[] }>(caminhoSeguranca(slug));
   if (lido && lido.dados.falhas.length) {
     await a.escreverJSON(caminhoSeguranca(slug), { falhas: [] }, { etag: lido.etag }).catch(() => {});
   }

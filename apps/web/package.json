@@ -8,7 +8,9 @@
     "dev": "next dev",
     "prebuild": "npm run sincronizar",
     "build": "next build",
-    "start": "next start",
+    "empacotar": "node scripts/empacotar.mjs",
+    "pacote": "npm run build && npm run empacotar",
+    "start": "node dist/celebramos-web/server.js",
     "tipos": "tsc --noEmit",
     "semear": "node scripts/semear-local.mjs",
     "testar": "python3 testes/e2e.py"
@@ -17,7 +19,6 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@vercel/blob": "^2.8.2",
     "next": "^16.4.5",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
