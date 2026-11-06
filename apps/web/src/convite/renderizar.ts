@@ -38,8 +38,8 @@ function imagemTema<T extends ImagemTema | string>(temaId: string, v: T): T {
 }
 
 /**
- * As fotos da galeria são do evento, não do tema: «img/foto-1.webp» passa a «/c/<slug>/img/foto-1.webp»
- * no link geral e a «/c/<slug>/<token>/img/foto-1.webp» no pessoal, com a regra de acesso do convite (fotos.ts).
+ * As fotos da galeria são do evento, não do tema. «img/foto-1.webp» passa a «/c/<slug>/img/foto-1.webp» no link
+ * geral; no pessoal, «img/foto-1.webp» vai a seguir ao link do convidado. A regra de acesso é a do convite (fotos.ts).
  */
 function srcFoto(prefixo: string, v: string) {
   return /^(\/|https?:)/.test(v) ? v : prefixo + encodeURIComponent(v.replace(/^(\.\/)?img\//, ""));
