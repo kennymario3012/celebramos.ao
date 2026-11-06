@@ -21,8 +21,8 @@ Actualizado em Novembro de 2026. A pedido do primeiro cliente real, a **zona de 
 | E0-S2 | Feito | CI do protótipo e da plataforma |
 | E1-S3 | Feito | `/c/{slug}` e `/c/{slug}/{token}`, 404 igual para slug e token |
 | E1-S6 | Feito | `.ics` servido. Imagem de partilha por tema (`og.jpg`) |
-| E4-S1 | Feito | Sem conta. Avisa quando o nome se repete |
-| E4-S2 | Parcial | Colar texto: feito. Importar ficheiro CSV ou Excel: por fazer |
+| E4-S1 | Feito | Sem conta. Avisa quando o nome se repete. Ao colar ou importar, os nomes repetidos ficam de fora e os telefones repetidos são assinalados |
+| E4-S2 | Parcial | Colar texto e importar ficheiro CSV, com modelo para o Excel: feito. Ficheiro `.xlsx`: por fazer |
 | E4-S3 | Parcial | Link novo e apagar: feito. Ligar e desligar o link geral só na configuração |
 | E4-S4 | Parcial | WhatsApp e copiar: feito. Partilha nativa: por fazer |
 | E5-S1 | Feito | «aberto» e «confirmar» por `sendBeacon`, uma vez por aparelho |

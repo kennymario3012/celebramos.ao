@@ -22,7 +22,7 @@ export function dataLonga(c: ConfiguracaoConvite) {
   return `${dia}, ${c.data.dia} de ${MESES[c.data.mes - 1]} de ${c.data.ano}`;
 }
 
-const semAcentos = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+export const semAcentos = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /**
  * Fim do prazo de confirmação: o fim do dia de `confirmacao.ate` («1 de Maio de 2027») em Luanda

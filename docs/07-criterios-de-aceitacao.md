@@ -22,7 +22,7 @@ O script serve a pasta num servidor local, troca as Google Fonts por cópias loc
 ```bash
 cd apps/web
 npm install && npm run pacote
-python3 testes/e2e.py            # 72 verificações (convite servido pela plataforma, resposta no convite e zona de gestão)
+python3 testes/e2e.py            # 89 verificações (convite servido pela plataforma, resposta no convite e zona de gestão)
 python3 testes/e2e.py --capturas # + capturas em testes/_capturas/
 ```
 
@@ -145,7 +145,7 @@ Implementada em `apps/web` ([decisão 0001](decisoes/0001-gestao-de-convidados-p
 | CA-GES-02 | Um PIN errado é recusado. Ao fim de 10 tentativas erradas, o acesso fica bloqueado 15 minutos, mesmo com o PIN certo. | ✔ |
 | CA-GES-03 | Um pedido de alteração sem o cabeçalho `X-Celebramos` é recusado (403). | ✔ |
 | CA-GES-04 | Um convidado cadastrado (nome, pessoas, WhatsApp, grupo) aparece na lista e no resumo. | ✔ |
-| CA-GES-05 | Colar uma lista mostra a pré-visualização com as linhas inválidas assinaladas e importa só as válidas. | ✔ |
+| CA-GES-05 | Colar uma lista mostra a pré-visualização com as linhas inválidas assinaladas e importa só as válidas. Os nomes que já estão na lista ficam de fora (CA-GES-18). | ✔ |
 | CA-GES-06 | Cada convidado tem um link com token de 22 caracteres. O convite pessoal mostra o nome, as pessoas e só esse convidado (CA-PER-01/02/04). | ✔ |
 | CA-GES-07 | «Enviar pelo WhatsApp» abre `wa.me` com o número do convidado e a mensagem com o link, e marca «Enviado». | ✔ |
 | CA-GES-08 | Abrir o convite e responder nele aparecem no painel («Abriu», «Respondeu no convite»). Depois do prazo, o toque nos botões do WhatsApp aparece como «Tocou em confirmar». «Ver convite» a partir da gestão não conta (CA-RSVP-05). | ✔ |
@@ -158,6 +158,8 @@ Implementada em `apps/web` ([decisão 0001](decisoes/0001-gestao-de-convidados-p
 | CA-GES-15 | O convite servido pela plataforma é igual, píxel a píxel, ao convite do protótipo com a mesma configuração (excepto a contagem, o botão de calendário e a resposta dentro do convite, que só existe na plataforma). | |
 | CA-GES-16 | A resposta dada no convite aparece no cartão do convidado («Respondeu no convite», data e hora, mensagem), conta no resumo e nos filtros e sai na exportação. A família pode corrigi-la, e o cartão mostra o que o convidado respondeu. | ✔ |
 | CA-GES-17 | Respostas de convidados e cadastros da família em simultâneo, em 2 processos com os mesmos dados, não se perdem. | ✔ |
+| CA-GES-18 | «Descarregar modelo» dá um CSV que abre no Excel em português (separador `;`, BOM UTF-8), com os títulos das colunas e exemplos. «Importar ficheiro» mostra a pré-visualização antes de gravar: linhas prontas, erros por linha com o número da linha do Excel e linhas que ficam de fora (o nome de alguém da lista ou de uma linha anterior, os exemplos do modelo). Um telefone repetido é assinalado. Grava só as prontas, e importar o mesmo ficheiro outra vez não duplica ninguém. | ✔ |
+| CA-GES-19 | A importação aceita CSV com `;`, `,` ou tabulação, com ou sem BOM, em UTF-8 ou Windows-1252, com campos entre aspas e colunas por qualquer ordem, e telefones com `+244`, `00244` ou só os 9 algarismos. Um ficheiro do Excel (`.xlsx`), com mais de 500 KB, vazio, inválido ou com mais de 1000 convidados dá uma mensagem clara. | ✔ |
 
 ## Portar os testes para a plataforma
 

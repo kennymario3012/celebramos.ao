@@ -1,12 +1,16 @@
 import { armazenamento, ConflitoEscrita } from "./armazenamento";
+import { CsvInvalido, lerCsv, paraCsv } from "./csv";
 import { TOKEN_VALIDO } from "./eventos";
-import { gerarToken, normalizarTelefone } from "./texto";
+import { gerarToken, normalizarTelefone, semAcentos } from "./texto";
 import type { Actividade, Convidado, EstadoConfirmacao, ListaConvidados } from "./tipos";
 
 const caminhoLista = (slug: string) => `eventos/${slug}/convidados.json`;
 const prefixoActividade = (slug: string) => `eventos/${slug}/actividade/`;
 
 const listaVazia = (): ListaConvidados => ({ versao: 1, convidados: [] });
+
+/** Máximo de convidados por evento. */
+export const MAXIMO_CONVIDADOS = 1000;
 
 export class ErroValidacao extends Error {}
 
@@ -67,7 +71,12 @@ export interface DadosConvidado {
 }
 
 export function validarConvidado(d: DadosConvidado) {
-  const telefone = normalizarTelefone(typeof d.telefone === "string" ? d.telefone : "");
+  const valor = typeof d.telefone === "string" ? d.telefone.trim() : "";
+  const telefone = normalizarTelefone(valor);
+  // o Excel mostra os números compridos como «2,44923E+11» e é isso que grava no CSV
+  if (telefone === null && /^\d+([.,]\d+)?e\+?\d+$/i.test(valor)) {
+    throw new ErroValidacao(`O Excel transformou o telefone em «${valor}». Escreva-o no Excel com espaços, como 923 000 000.`);
+  }
   if (telefone === null) throw new ErroValidacao("Telefone inválido. Exemplo: 923 000 000 ou +244 923 000 000.");
   return {
     nome: texto(d.nome, 60, "o nome", true)!,
@@ -118,6 +127,44 @@ export function aplicarAlteracao(c: Convidado, a: Alteracao) {
   c.actualizadoEm = new Date().toISOString();
 }
 
+/* ---------------- importação: colar uma lista ou um ficheiro CSV ---------------- */
+
+/**
+ * Uma linha importada: pronta a gravar (às vezes com um aviso), com um erro para corrigir,
+ * ou posta de parte (`ignorada`: repete alguém ou é um exemplo do modelo).
+ */
+export type LinhaImportada =
+  | { linha: number; texto: string; ok: true; convidado: ReturnType<typeof validarConvidado>; aviso?: string }
+  | { linha: number; texto: string; ok: false; erro: string; ignorada?: true };
+
+function importarLinha(linha: number, texto: string, d: DadosConvidado): LinhaImportada {
+  try {
+    return { linha, texto, ok: true, convidado: validarConvidado(d) };
+  } catch (e) {
+    if (!(e instanceof ErroValidacao)) throw e;
+    return { linha, texto, ok: false, erro: e.message };
+  }
+}
+
+/** «3», «3 pessoas», «3 pax». */
+const PESSOAS = /^(\d{1,2})\s*(pessoas?|pax|p)?$/i;
+
+/** Reconhece as partes pelo conteúdo: a primeira é o nome, depois o número de pessoas e o telefone; o resto é o grupo. */
+function porConteudo(partes: string[]): DadosConvidado {
+  const [nome, ...resto] = partes.map((p) => p.trim());
+  let pessoas: string | undefined;
+  let telefone: string | undefined;
+  const grupo: string[] = [];
+  for (const p of resto) {
+    if (!p) continue;
+    const n = PESSOAS.exec(p);
+    if (pessoas === undefined && n) pessoas = n[1];
+    else if (telefone === undefined && /^[+\d][\d\s().-]{7,}$/.test(p)) telefone = p;
+    else grupo.push(p);
+  }
+  return { nome, pessoas, telefone, grupo: grupo.join(", ") };
+}
+
 /**
  * Interpreta uma lista colada: um convidado por linha, «Nome; pessoas; telefone; grupo».
  * Separadores aceites: «;», tabulação, « - » e vírgula (se a linha não tiver «;» nem tabulação).
@@ -129,24 +176,120 @@ export function interpretarLista(textoColado: string) {
     if (/[;\t]/.test(linha)) partes = linha.split(/[;\t]/);
     else if (/ - /.test(linha)) partes = linha.split(/ - /);
     else partes = linha.split(",");
-    partes = partes.map((p) => p.trim());
-    const [nome, ...resto] = partes;
-    let pessoas: string | undefined;
-    let telefone: string | undefined;
-    const grupo: string[] = [];
-    for (const p of resto) {
-      if (!p) continue;
-      const n = /^(\d{1,2})\s*(pessoas?|pax|p)?$/i.exec(p);
-      if (pessoas === undefined && n) pessoas = n[1];
-      else if (telefone === undefined && /^[+\d][\d\s().-]{7,}$/.test(p)) telefone = p;
-      else grupo.push(p);
+    return importarLinha(i + 1, linha, porConteudo(partes));
+  });
+}
+
+/**
+ * Colunas do modelo CSV, pela ordem. Na importação, cada coluna é reconhecida pelo título (sem acentos,
+ * maiúsculas nem o que está entre parênteses): o do modelo, um dos `outros` ou, se não houver, um que
+ * tenha uma das `raizes` («Nome do convidado», «Telefone do convidado»…).
+ */
+const COLUNAS = [
+  { campo: "nome", titulo: "Nome no convite", outros: ["nome", "nomes", "convidado", "convidados", "nome no envelope"], raizes: ["nome"] },
+  { campo: "pessoas", titulo: "Pessoas", outros: ["pessoa", "n de pessoas", "numero de pessoas", "quantidade", "lugares", "pax"], raizes: ["pessoa"] },
+  { campo: "telefone", titulo: "Telefone (WhatsApp)", outros: ["telemovel", "whatsapp", "contacto", "contato", "numero", "celular", "tel", "tlm"], raizes: ["telefone", "telemovel", "whatsapp", "contacto"] },
+  { campo: "grupo", titulo: "Grupo", outros: ["etiqueta", "categoria"], raizes: ["grupo", "etiqueta"] },
+  { campo: "notas", titulo: "Notas (só para a família)", outros: ["nota", "observacoes", "observacao", "obs"], raizes: ["nota", "observ"] },
+] as const;
+type Campo = (typeof COLUNAS)[number]["campo"];
+
+/** Exemplos do modelo, com telefones fictícios. Se ficarem no ficheiro, a importação põe-nos de parte. */
+const EXEMPLOS_MODELO = [
+  { nome: "Sr. Carlos Neto e Família", pessoas: 3, telefone: "923 000 000", grupo: "Família do pai", notas: "Mesa 4" },
+  { nome: "Ana e Rui Mendes", pessoas: 2, telefone: "912 000 000", grupo: "Amigos da escola", notas: "" },
+];
+const EXEMPLOS = EXEMPLOS_MODELO.map((e) => `${semAcentos(e.nome)}|${normalizarTelefone(e.telefone)}`);
+
+/** Modelo para preencher no Excel: os títulos das colunas e os exemplos, em CSV como a exportação («;» e BOM). */
+export function modeloCsv() {
+  return paraCsv([COLUNAS.map((c) => c.titulo), ...EXEMPLOS_MODELO.map((e) => [e.nome, e.pessoas, e.telefone, e.grupo, e.notas])]);
+}
+
+const normalizarTitulo = (s: string) => semAcentos(s).replace(/\(.*?\)/g, " ").replace(/[^a-z0-9]+/g, " ").trim();
+
+/** Em que coluna está cada campo, a partir dos títulos. `exactos`: quantos títulos foram reconhecidos sem as raízes. */
+function lerTitulos(celulas: string[]) {
+  const titulos = celulas.map(normalizarTitulo);
+  const colunas: Partial<Record<Campo, number>> = {};
+  const livre = (i: number) => !Object.values(colunas).includes(i);
+  for (const c of COLUNAS) {
+    const aceites: readonly string[] = [normalizarTitulo(c.titulo), ...c.outros];
+    const i = titulos.findIndex((t, i) => livre(i) && aceites.includes(t));
+    if (i >= 0) colunas[c.campo] = i;
+  }
+  const exactos = Object.keys(colunas).length;
+  for (const c of COLUNAS) {
+    if (colunas[c.campo] !== undefined) continue;
+    const i = titulos.findIndex((t, i) => livre(i) && t.split(" ").some((p) => c.raizes.some((r) => p.startsWith(r))));
+    if (i >= 0) colunas[c.campo] = i;
+  }
+  return { colunas, exactos };
+}
+
+/**
+ * Interpreta um ficheiro CSV (do modelo, do Excel, do Google Sheets…). Com a linha dos títulos, as colunas
+ * vão pelos títulos, por qualquer ordem, e as outras são ignoradas. Sem ela, cada linha é lida como em
+ * «Colar lista». As linhas vazias são saltadas; `linha` é o número da linha no Excel.
+ */
+export function interpretarCsv(texto: string) {
+  if (texto.includes("\0")) throw new ErroValidacao("Este ficheiro não parece uma lista de convidados em CSV.");
+  let registos: string[][];
+  try {
+    registos = lerCsv(texto);
+  } catch (e) {
+    if (e instanceof CsvInvalido) throw new ErroValidacao(e.message);
+    throw e;
+  }
+  const vazio = (r: string[]) => r.every((c) => !c.trim());
+  const primeira = registos.findIndex((r) => !vazio(r));
+  if (primeira < 0) throw new ErroValidacao("O ficheiro está vazio.");
+  const { colunas, exactos } = lerTitulos(registos[primeira]);
+  const comTitulos = colunas.nome !== undefined;
+  if (!comTitulos && exactos >= 2) {
+    throw new ErroValidacao("Falta a coluna «Nome no convite». Use o modelo: a primeira linha tem os títulos das colunas.");
+  }
+  const linhas: LinhaImportada[] = [];
+  for (let i = comTitulos ? primeira + 1 : primeira; i < registos.length; i++) {
+    const r = registos[i].map((c) => c.trim());
+    if (vazio(r)) continue;
+    if (linhas.length === MAXIMO_CONVIDADOS) {
+      throw new ErroValidacao(`O ficheiro tem mais de ${MAXIMO_CONVIDADOS} convidados, o máximo de uma lista.`);
     }
-    try {
-      const v = validarConvidado({ nome, pessoas, telefone, grupo: grupo.join(", ") });
-      return { linha: i + 1, ok: true as const, convidado: v };
-    } catch (e) {
-      return { linha: i + 1, ok: false as const, texto: linha, erro: (e as Error).message };
-    }
+    const celula = (campo: Campo) => {
+      const coluna = colunas[campo];
+      return coluna === undefined ? undefined : r[coluna];
+    };
+    const pessoas = celula("pessoas") ?? "";
+    const d = comTitulos
+      ? { nome: celula("nome"), pessoas: PESSOAS.exec(pessoas)?.[1] ?? pessoas, telefone: celula("telefone"), grupo: celula("grupo"), notas: celula("notas") }
+      : porConteudo(r);
+    while (!r[r.length - 1]) r.pop();
+    linhas.push(importarLinha(i + 1, r.join("; "), d));
+  }
+  if (!linhas.length) throw new ErroValidacao("O ficheiro só tem a linha dos títulos. Escreva um convidado por linha, a partir da linha 2.");
+  return { linhas, semTitulos: !comTitulos };
+}
+
+/**
+ * Põe de parte as linhas com o nome (sem contar acentos nem maiúsculas) de alguém da lista ou de uma linha
+ * anterior, e os exemplos do modelo. Um telefone repetido só fica assinalado: pode ser o contacto de vários convites.
+ */
+export function marcarRepetidas(linhas: LinhaImportada[], existentes: Convidado[]): LinhaImportada[] {
+  const nomes = new Map(existentes.map((c) => [semAcentos(c.nome), "Já está na lista."]));
+  const telefones = new Map<string, string>(existentes.flatMap((c) => (c.telefone ? [[c.telefone, `«${c.nome}»`]] : [])));
+  return linhas.map((l) => {
+    if (!l.ok) return l;
+    const ignorar = (erro: string): LinhaImportada => ({ linha: l.linha, texto: l.texto, ok: false, erro, ignorada: true });
+    const { nome, telefone } = l.convidado;
+    const chave = semAcentos(nome);
+    if (EXEMPLOS.includes(`${chave}|${telefone}`)) return ignorar("Exemplo do modelo: apague esta linha.");
+    const repetido = nomes.get(chave);
+    if (repetido) return ignorar(repetido);
+    nomes.set(chave, `Repete a linha ${l.linha}.`);
+    const mesmo = telefone && telefones.get(telefone);
+    if (telefone && !mesmo) telefones.set(telefone, `a linha ${l.linha}`);
+    return mesmo ? { ...l, aviso: `Mesmo telefone que ${mesmo}.` } : l;
   });
 }
 
