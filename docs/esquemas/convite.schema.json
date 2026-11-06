@@ -89,7 +89,8 @@
             }
           }
         },
-        "mensagem": { "type": "string", "maxLength": 500, "description": "Modelo da mensagem de WhatsApp. Marcadores: {debutante}, {dataCurta}, {convidado}, {pessoas}." }
+        "mensagem": { "type": "string", "maxLength": 500, "description": "Modelo da mensagem de WhatsApp. Marcadores: {debutante} (ou {homenageado}), {dataCurta}, {convidado}, {pessoas}." },
+        "mensagemRecusa": { "type": "string", "maxLength": 500, "description": "PLATAFORMA (confirmação dentro do convite): modelo da mensagem de WhatsApp quando o convidado responde que não vai. Mesmos marcadores. Por omissão: «Olá! Lamento, mas não será possível estar presente no dia {dataCurta}.\nConvidado: {convidado}»." }
       }
     },
     "textos": {
@@ -193,10 +194,27 @@
       "description": "PLATAFORMA: convidado do link pessoal, resolvido no servidor a partir do token. Tem prioridade sobre o #código do protótipo.",
       "properties": {
         "nome": { "type": "string", "minLength": 1, "maxLength": 60 },
-        "pessoas": { "type": "integer", "minimum": 1, "maximum": 30 }
+        "pessoas": { "type": "integer", "minimum": 1, "maximum": 30 },
+        "resposta": {
+          "type": "object", "additionalProperties": false, "required": ["estado"],
+          "description": "PLATAFORMA: resposta registada (dada no convite ou marcada pela família). O convite mostra-a e deixa alterá-la até ao prazo.",
+          "properties": {
+            "estado": { "enum": ["confirmado", "recusado"] },
+            "pessoas": { "type": "integer", "minimum": 0, "maximum": 30, "description": "Pessoas que vêm (só com «confirmado»)." },
+            "mensagem": { "type": "string", "maxLength": 300, "description": "Mensagem da última resposta dada no convite (para a alterar)." }
+          }
+        }
       }
     },
     "registo": { "type": "string", "pattern": "^/", "description": "PLATAFORMA: caminho para onde o convite envia as interacções (aberto, confirmar) por sendBeacon. Ausente no protótipo." },
+    "responder": {
+      "type": "object", "additionalProperties": false,
+      "description": "PLATAFORMA, link pessoal: confirmação dentro do convite (vou ou não vou, pessoas, mensagem). Ausente no protótipo e no link geral, que só têm o WhatsApp.",
+      "properties": {
+        "caminho": { "type": "string", "pattern": "^/", "description": "Para onde se envia a resposta (POST). Ausente na pré-visualização, que mostra o formulário sem gravar." },
+        "fechado": { "type": "boolean", "description": "Verdadeiro depois do prazo de confirmação: o convite mostra a resposta registada e os botões do WhatsApp." }
+      }
+    },
     "convidados": {
       "type": "object",
       "description": "PROTÓTIPO: códigos dos links pessoais (#código). PLATAFORMA: apenas o convidado actual, resolvido no servidor a partir do token.",

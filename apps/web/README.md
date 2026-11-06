@@ -2,12 +2,12 @@
 
 Aplicação Next.js com duas coisas:
 
-1. **O convite servido pela plataforma**, com links pessoais `/c/{slug}/{token}`. O convidado é resolvido no servidor e o HTML só leva esse convidado. O link geral é `/c/{slug}`.
+1. **O convite servido pela plataforma**, com links pessoais `/c/{slug}/{token}`. O convidado é resolvido no servidor e o HTML só leva esse convidado. No link pessoal, o convidado responde no próprio convite (vou ou não vou, pessoas, mensagem), e o WhatsApp abre no mesmo toque com a mensagem para a família ([decisão 0003](../../docs/decisoes/0003-confirmacao-dentro-do-convite.md)). O link geral é `/c/{slug}`, só com o WhatsApp.
 2. **A zona de gestão de convidados** `/gestao/{slug}`, onde a família entra com um PIN e trata dos convidados:
    - cadastrar, um a um ou colando uma lista;
    - enviar cada link pelo WhatsApp;
-   - ver quem abriu e quem tocou em «Confirmar»;
-   - marcar as respostas;
+   - ver quem abriu e as respostas que os convidados deram no convite;
+   - marcar ou corrigir as respostas à mão;
    - exportar para Excel.
 
 A experiência do convite vem do protótipo. `scripts/sincronizar-prototipo.mjs` copia `prototipo/template.html`, `icones.json` e os temas antes de `dev` e de `build`, e o protótipo continua a ser a fonte única. A aplicação fica alojada no **cPanel** ([decisão 0002](../../docs/decisoes/0002-alojamento-no-cpanel.md)).
@@ -29,7 +29,7 @@ Em desenvolvimento, sem `CELEBRAMOS_DADOS`, os dados ficam em `.dados-locais/` (
 
 ```bash
 npm run pacote                    # next build + pacote do cPanel em dist/celebramos-web
-python3 testes/e2e.py             # 47 verificações contra o pacote, a correr em 2 processos com os mesmos dados
+python3 testes/e2e.py             # 70 verificações contra o pacote, a correr em 2 processos com os mesmos dados
 python3 testes/e2e.py --capturas  # + capturas em testes/_capturas/
 ```
 
@@ -43,8 +43,8 @@ Ficheiros JSON (e as fotos da galeria) na pasta `CELEBRAMOS_DADOS`, **fora da pa
 |---|---|
 | `eventos/{slug}/evento.json` | Evento: a configuração do convite (docs/04 §1), `gestao.pin` (hash scrypt do PIN da família) e `linkGeralActivo`. |
 | `eventos/{slug}/img/{ficheiro}` | Fotos da galeria, referidas na configuração como `img/{ficheiro}`. O convite pede-as a `/c/{slug}/img/…` (link geral, só enquanto estiver activo) ou a `/c/{slug}/{token}/img/…` (link pessoal, só com token válido), com `Cache-Control: private`. |
-| `eventos/{slug}/convidados.json` | Lista de convidados e mensagem de envio. É gravada com concorrência optimista (ETag) e bloqueio entre processos. |
-| `eventos/{slug}/actividade/{token}/{tipo}-{ms}-…` | Marcadores vazios de «aberto» e «confirmar». O painel agrega-os só pelos nomes. |
+| `eventos/{slug}/convidados.json` | Lista de convidados (com a última resposta dada no convite) e mensagem de envio. É gravada com concorrência optimista (ETag) e bloqueio entre processos, tanto pela família como pelas respostas dos convidados. |
+| `eventos/{slug}/actividade/{token}/{tipo}-{ms}-…` | Marcadores vazios de «aberto», «confirmar» e «resposta». O painel agrega-os só pelos nomes. Os de «resposta» limitam as respostas a 10 por hora em cada link. |
 | `eventos/{slug}/seguranca.json` | Tentativas de PIN falhadas (bloqueio de 15 minutos ao fim de 10). |
 | `sistema/segredo-sessao.json` | Segredo de assinatura das sessões, se `SEGREDO_SESSAO` não estiver definido. |
 

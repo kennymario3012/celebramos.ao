@@ -150,9 +150,47 @@ export function interpretarLista(textoColado: string) {
   });
 }
 
-/* ---------------- actividade (aberturas e toques em «Confirmar») ---------------- */
+/* ---------------- resposta do convidado dentro do convite ---------------- */
 
-export type TipoActividade = "aberto" | "confirmar";
+export interface DadosResposta {
+  estado?: unknown;
+  pessoas?: unknown;
+  mensagem?: unknown;
+}
+
+/**
+ * Aplica a resposta dada no convite: vou (com as pessoas, até ao número do convite; por omissão, todas)
+ * ou não vou, e uma mensagem opcional. Muda o estado, como se a família o marcasse, e guarda a resposta.
+ */
+export function aplicarResposta(c: Convidado, d: DadosResposta) {
+  if (d.estado !== "confirmado" && d.estado !== "recusado") throw new ErroValidacao("Escolha se vai ou não.");
+  const mensagem = texto(d.mensagem, 300, "A mensagem");
+  const em = new Date().toISOString();
+  if (d.estado === "confirmado") {
+    const pessoas = d.pessoas === undefined ? c.pessoas : inteiro(d.pessoas, 1, c.pessoas, "Pessoas");
+    c.pessoasConfirmadas = pessoas;
+    c.resposta = { estado: d.estado, pessoas, ...(mensagem ? { mensagem } : {}), em };
+  } else {
+    delete c.pessoasConfirmadas;
+    c.resposta = { estado: d.estado, ...(mensagem ? { mensagem } : {}), em };
+  }
+  c.estado = d.estado;
+  c.actualizadoEm = em;
+}
+
+/** Limite de respostas por link pessoal e por hora (contra pedidos repetidos). */
+export const RESPOSTAS_POR_HORA = 10;
+
+/** Respostas deste convidado na última hora, pelos marcadores `resposta-…` (comum a todos os processos). */
+export async function respostasRecentes(slug: string, token: string) {
+  const desde = Date.now() - 3600_000;
+  const itens = await armazenamento().listar(`${prefixoActividade(slug)}${token}/`);
+  return itens.filter((it) => Number(/\/resposta-(\d{10,})-/.exec(it.caminho)?.[1] ?? 0) > desde).length;
+}
+
+/* ---------------- actividade (aberturas, toques em «Confirmar» e respostas) ---------------- */
+
+export type TipoActividade = "aberto" | "confirmar" | "resposta";
 
 export async function registarActividade(slug: string, token: string, tipo: TipoActividade) {
   await armazenamento().criarMarcador(`${prefixoActividade(slug)}${token}/${tipo}-${Date.now()}`);

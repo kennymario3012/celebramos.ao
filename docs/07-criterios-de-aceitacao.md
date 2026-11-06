@@ -22,7 +22,7 @@ O script serve a pasta num servidor local, troca as Google Fonts por cópias loc
 ```bash
 cd apps/web
 npm install && npm run pacote
-python3 testes/e2e.py            # 40 verificações (convite servido pela plataforma e zona de gestão)
+python3 testes/e2e.py            # 70 verificações (convite servido pela plataforma, resposta no convite e zona de gestão)
 python3 testes/e2e.py --capturas # + capturas em testes/_capturas/
 ```
 
@@ -66,7 +66,12 @@ O script arranca o **próprio pacote do cPanel** (`dist/celebramos-web/server.js
 | CA-RSVP-02 | Cada botão abre `https://wa.me/<telefone>?text=…` num novo separador. | ✔¹ |
 | CA-RSVP-03 | A mensagem leva o nome do convidado e, se houver, o número de pessoas. | ✔¹ |
 | CA-RSVP-04 | Sem número configurado, o toque mostra o aviso de pré-visualização e não abre um link partido. | ✔ |
-| CA-RSVP-05 | *(Plataforma)* O toque regista `confirmar_tocado` sem atrasar a abertura do WhatsApp. Se o registo falhar, o WhatsApp abre na mesma. | |
+| CA-RSVP-05 | *(Plataforma)* O toque nos botões que só abrem o WhatsApp regista `confirmar_tocado` sem atrasar a abertura do WhatsApp. Se o registo falhar, o WhatsApp abre na mesma. | ✔² |
+| CA-RSVP-06 | *(Plataforma)* No link pessoal, o convidado responde no convite: vou ou não vou, pessoas de 1 até ao número do convite (por omissão, todas) e mensagem opcional. O mesmo toque grava a resposta e abre o WhatsApp com a mensagem de confirmação, com as pessoas escolhidas, ou a de recusa, e com a mensagem do convidado. | ✔² |
+| CA-RSVP-07 | *(Plataforma)* Ao reabrir o link, o convite mostra a resposta registada (também a marcada pela família) e deixa alterá-la até ao prazo. | ✔² |
+| CA-RSVP-08 | *(Plataforma)* Depois do prazo (fim do dia de `confirmacao.ate` em Luanda), o formulário fecha: o convite mostra a resposta registada e os botões do WhatsApp, e o servidor recusa respostas (410). | ✔² |
+| CA-RSVP-09 | *(Plataforma)* O link geral só tem o WhatsApp, sem formulário. A pré-visualização mostra o formulário, mas não grava. | ✔² |
+| CA-RSVP-10 | *(Plataforma)* `POST /c/{slug}/{token}/resposta`: um token desconhecido dá o 404 do convite, dados inválidos dão 400 sem gravar e mais de 10 respostas numa hora no mesmo link dão 429. | ✔² |
 | CA-MAP-01 | Cada evento com local (texto ou coordenadas) tem Google Maps e Waze. Um evento sem local não tem nenhum. | ✔ |
 | CA-MAP-02 | Com coordenadas, os links usam `query=<lat>,<lng>` (Google) e `ll=<lat>,<lng>&navigate=yes` (Waze). | |
 | CA-CAL-01 | O botão de calendário descarrega o `.ics` (com alojamento próprio) ou abre o Google Calendar. | ✔ |
@@ -75,6 +80,8 @@ O script arranca o **próprio pacote do cPanel** (`dist/celebramos-web/server.js
 | CA-CD-02 | Depois da data, a contagem mostra zeros e o texto «chegou o grande dia!». | |
 
 ¹ Só quando o botão tem número configurado. Os exemplos fictícios não têm números, por isso nos exemplos verifica-se o CA-RSVP-04. A mensagem é verificada pelo nome do convidado.
+
+² Verificado por `apps/web/testes/e2e.py` (a plataforma), não pelo protótipo.
 
 ### Galeria
 
@@ -141,14 +148,16 @@ Implementada em `apps/web` ([decisão 0001](decisoes/0001-gestao-de-convidados-p
 | CA-GES-05 | Colar uma lista mostra a pré-visualização com as linhas inválidas assinaladas e importa só as válidas. | ✔ |
 | CA-GES-06 | Cada convidado tem um link com token de 22 caracteres. O convite pessoal mostra o nome, as pessoas e só esse convidado (CA-PER-01/02/04). | ✔ |
 | CA-GES-07 | «Enviar pelo WhatsApp» abre `wa.me` com o número do convidado e a mensagem com o link, e marca «Enviado». | ✔ |
-| CA-GES-08 | Abrir o convite e tocar em «Confirmar» aparecem no painel («Abriu», «Tocou em confirmar»). «Ver convite» a partir da gestão não conta (CA-RSVP-05). | ✔ |
-| CA-GES-09 | As respostas «Vem», com o número de pessoas, e «Não vem» actualizam o resumo e os filtros. A pesquisa ignora acentos. | ✔ |
+| CA-GES-08 | Abrir o convite e responder nele aparecem no painel («Abriu», «Respondeu no convite»). Depois do prazo, o toque nos botões do WhatsApp aparece como «Tocou em confirmar». «Ver convite» a partir da gestão não conta (CA-RSVP-05). | ✔ |
+| CA-GES-09 | As respostas «Vem», com o número de pessoas, e «Não vem», dadas no convite ou marcadas pela família, actualizam o resumo e os filtros. A pesquisa ignora acentos. | ✔ |
 | CA-GES-10 | Editar funciona. Criar um link novo faz o anterior responder 404. Apagar faz o link responder 404 (CA-PLA-09). | ✔ |
 | CA-GES-11 | A mensagem do WhatsApp é editável, tem `{link}` obrigatório e é usada no envio. | ✔ |
 | CA-GES-12 | A exportação CSV para o Excel tem as colunas e os estados (CA-PLA-08). | ✔ |
 | CA-GES-13 | Com 12 cadastros em simultâneo, repartidos por 2 processos com os mesmos dados, nenhum se perde. | ✔ |
 | CA-GES-14 | No telemóvel a 320 px não há transbordo, no computador o painel fica centrado, e a consola não tem erros. | ✔ |
-| CA-GES-15 | O convite servido pela plataforma é igual, píxel a píxel, ao convite do protótipo com a mesma configuração (excepto a contagem e o botão de calendário). | |
+| CA-GES-15 | O convite servido pela plataforma é igual, píxel a píxel, ao convite do protótipo com a mesma configuração (excepto a contagem, o botão de calendário e a resposta dentro do convite, que só existe na plataforma). | |
+| CA-GES-16 | A resposta dada no convite aparece no cartão do convidado («Respondeu no convite», data e hora, mensagem), conta no resumo e nos filtros e sai na exportação. A família pode corrigi-la, e o cartão mostra o que o convidado respondeu. | ✔ |
+| CA-GES-17 | Respostas de convidados e cadastros da família em simultâneo, em 2 processos com os mesmos dados, não se perdem. | ✔ |
 
 ## Portar os testes para a plataforma
 

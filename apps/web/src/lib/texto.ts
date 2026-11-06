@@ -22,6 +22,24 @@ export function dataLonga(c: ConfiguracaoConvite) {
   return `${dia}, ${c.data.dia} de ${MESES[c.data.mes - 1]} de ${c.data.ano}`;
 }
 
+const semAcentos = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/**
+ * Fim do prazo de confirmação: o fim do dia de `confirmacao.ate` («1 de Maio de 2027») em Luanda
+ * (UTC+1, sem hora de Verão). É o prazo que o convidado lê no convite. Se o texto não tiver este
+ * formato, ou for depois da festa, o prazo é o início da festa.
+ */
+export function fimDoPrazo(c: ConfiguracaoConvite): Date {
+  const inicio = new Date(c.data.iso);
+  const m = /^\s*(\d{1,2})\s+de\s+(\S+)\s+de\s+(\d{4})\s*$/i.exec(c.confirmacao.ate);
+  const mes = m ? MESES.findIndex((x) => semAcentos(x) === semAcentos(m[2])) : -1;
+  if (!m || mes < 0) return inicio;
+  const [dia, ano] = [Number(m[1]), Number(m[3])];
+  if (new Date(Date.UTC(ano, mes, dia)).getUTCDate() !== dia) return inicio; // ex.: 31 de Abril
+  const fim = new Date(Date.UTC(ano, mes, dia + 1) - 3600_000); // 00h00 do dia seguinte, em Luanda
+  return fim < inicio ? fim : inicio;
+}
+
 /** Substitui todos os {marcadores} conhecidos; os desconhecidos ficam como estão. */
 export function preencher(modelo: string, valores: Record<string, string>) {
   return modelo.replace(/\{(\w+)\}/g, (inteiro, chave: string) => (chave in valores ? valores[chave] : inteiro));

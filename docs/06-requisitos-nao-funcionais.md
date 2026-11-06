@@ -69,7 +69,7 @@ O convite expõe dados pessoais (nomes, datas, locais) e, em festas de 15 anos, 
 
 Requisitos:
 
-1. **Minimização.** Do convidado guarda-se só o nome, o número de pessoas e, opcionalmente, o telefone e a etiqueta. Nada de moradas, emails ou documentos.
+1. **Minimização.** Do convidado guarda-se só o nome, o número de pessoas, a resposta (vou ou não vou, pessoas e uma mensagem opcional, até 300 caracteres) e, opcionalmente, o telefone e a etiqueta. Nada de moradas, emails ou documentos.
 2. **Menores.**
    - A galeria fica desligada por omissão.
    - Uma fotografia de menor só é publicada com **autorização expressa** dos pais ou do representante legal, registada em `ficheiro.autorizacao`.
@@ -91,7 +91,7 @@ Requisitos:
 
 - **HTTPS:** certificado TLS válido no domínio (nunca auto-assinado: os navegadores e o WhatsApp mostram avisos). **Tem de** estar activo antes de enviar convites.
 - **Público:**
-  - limite de pedidos nas rotas `/c/` e no envio de códigos de acesso;
+  - limite de pedidos nas rotas `/c/` e no envio de códigos de acesso (nas respostas dentro do convite: 10 por hora em cada link);
   - respostas 404 iguais para slug e token inexistentes;
   - tokens comparados em tempo constante.
 - **Cabeçalhos** nas páginas de convite:
@@ -134,7 +134,7 @@ Requisitos:
 
 - Disponibilidade das rotas `/c/` ≥ 99,5 % por mês.
 - O convite publicado **tem de** abrir mesmo com a base de dados indisponível: versão imutável, cache na CDN com `stale-if-error`, e links de WhatsApp, mapas e calendário directos.
-- As interacções são registadas «na melhor das hipóteses». Perder uma é aceitável, mas bloquear o convidado nunca é.
+- As interacções são registadas «na melhor das hipóteses». Perder uma é aceitável, mas bloquear o convidado nunca é. A resposta dentro do convite também não bloqueia: o WhatsApp abre no mesmo toque, mesmo que a gravação falhe.
 - Recuperação: RPO ≤ 24 h, RTO ≤ 4 h.
 
 ## Observabilidade e métricas

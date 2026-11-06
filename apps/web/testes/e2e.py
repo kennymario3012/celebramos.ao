@@ -40,6 +40,9 @@ PIN = "123456"
 TEL_FAMILIA = "244900000000"  # fictício
 CAPTURAS = APP / "testes" / "_capturas"
 
+SLUG_FECHADO = "exemplo-bela-principe-fechado"  # cópia com o prazo de confirmação já passado
+X = {"X-Celebramos": "1"}
+
 
 class Relatorio:
     def __init__(self):
@@ -68,6 +71,31 @@ def entrar(pin=PIN, slug=SLUG):
     estado, cab, corpo = pedido(f"/api/gestao/{slug}/entrar", "POST", {"pin": pin}, cabecalhos={"X-Celebramos": "1"})
     cookie = (cab.get("set-cookie") or "").split(";")[0]
     return estado, cookie, corpo
+
+
+def responder(token, corpo, slug=SLUG, base=None):
+    """Resposta do convidado dentro do convite (POST /c/<slug>/<token>/resposta). `corpo`: dicionário ou bytes."""
+    dados = corpo if isinstance(corpo, bytes) else json.dumps(corpo).encode()
+    req = urllib.request.Request(f"{base or BASE}/c/{slug}/{token}/resposta", data=dados, method="POST", headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req) as r:
+            return r.status, r.read()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read()
+
+
+def preparar_prazos(pasta):
+    """Prazos de confirmação fixos, para os testes não dependerem da data de hoje: o evento principal
+    aceita respostas até 2099 e uma cópia dele, com o prazo já passado, tem o formulário fechado."""
+    ev = pasta / "eventos" / SLUG / "evento.json"
+    d = json.loads(ev.read_text())
+    d["configuracao"]["data"]["iso"] = "2099-05-15T17:00:00+01:00"
+    d["configuracao"]["confirmacao"]["ate"] = "1 de Maio de 2099"
+    ev.write_text(json.dumps(d))
+    shutil.copytree(pasta / "eventos" / SLUG, pasta / "eventos" / SLUG_FECHADO)
+    ev = pasta / "eventos" / SLUG_FECHADO / "evento.json"
+    d["configuracao"]["confirmacao"]["ate"] = "1 de Janeiro de 2020"
+    ev.write_text(json.dumps(d))
 
 
 def preparar_dados(pasta):
@@ -115,7 +143,8 @@ def pagina(browser, w=375, h=812, movel=True):
         else:
             route.abort()
     pg.route("**/__fontes/**", ficheiro_fonte)
-    pg.route("https://wa.me/**", lambda r: r.fulfill(status=200, content_type="text/html", body="whatsapp"))
+    # no contexto, para valer também nos separadores novos que o convite abre
+    ctx.route("https://wa.me/**", lambda r: r.fulfill(status=200, content_type="text/html", body="whatsapp"))
     erros = []
     pg.on("pageerror", lambda e: erros.append(str(e)))
     pg.on("console", lambda m: erros.append(m.text) if m.type == "error" and "401" not in m.text and "Failed to load resource" not in m.text else None)
@@ -134,6 +163,7 @@ def main(capturas=False):
             pass
     dados = Path(tempfile.mkdtemp(prefix="celebramos-e2e-"))
     preparar_dados(dados)
+    preparar_prazos(dados)
     servidores = []
     for porta in (PORTA, PORTA2):
         env = {**os.environ, "CELEBRAMOS_DADOS": str(dados), "NODE_ENV": "production", "PORT": str(porta),
@@ -170,6 +200,7 @@ def correr(R, capturas):
     R.ok("noindex e sem referenciador (CA-QUA-04)", cab.get("x-robots-tag") == "noindex, nofollow" and cab.get("referrer-policy") == "no-referrer")
     R.ok("metadados Open Graph com imagem do tema (CA-QUA-04)", 'property="og:title"' in html and f"/temas/bela-principe/og.jpg" in html)
     R.ok("o HTML não leva nomes de convidados de exemplo (CA-PER-04)", "Carlos Neto" not in html and "Rui Mendes" not in html)
+    R.ok("link geral: confirmação só pelo WhatsApp, sem formulário (CA-RSVP-09)", '"responder":' not in html and '"convidadoActual":' not in html)
     estado404, _, corpo404 = pedido(f"/c/{SLUG}/AAAAAAAAAAAAAAAAAAAAAA")
     estado404b, _, corpo404b = pedido("/c/nao-existe/AAAAAAAAAAAAAAAAAAAAAA")
     R.ok("token ou evento inexistente: 404 igual (CA-PER-05)", estado404 == 404 and estado404b == 404 and corpo404 == corpo404b)
@@ -231,6 +262,57 @@ def correr(R, capturas):
          f"estados={estados} gravados={sum(n.startswith('Convidado paralelo') for n in nomes)}")
     for c in json.loads(corpo)["convidados"]:
         pedido(f"/api/gestao/{SLUG}/convidados/{c['token']}", "DELETE", cookie=cookie, cabecalhos={"X-Celebramos": "1"})
+
+    print("Convite: resposta dentro do convite (pedidos)")
+    def lista_api(slug=SLUG, ck=None):
+        return json.loads(pedido(f"/api/gestao/{slug}/dados", cookie=ck or cookie)[2])["convidados"]
+
+    def novo(nome, pessoas, slug=SLUG, ck=None):
+        pedido(f"/api/gestao/{slug}/convidados", "POST", {"nome": nome, "pessoas": pessoas}, cookie=ck or cookie, cabecalhos=X)
+        return next(c for c in lista_api(slug, ck) if c["nome"] == nome)
+
+    t = novo("Convidado da API", 2)["token"]
+    html_api = pedido(f"/c/{SLUG}/{t}")[2].decode()
+    html_previa = pedido(f"/c/{SLUG}/{t}?previa=1")[2].decode()
+    R.ok("link pessoal: formulário com o caminho da resposta; a pré-visualização não grava (CA-RSVP-06/09)",
+         f'"caminho": "/c/{SLUG}/{t}/resposta"' in html_api and '"responder": {}' in html_previa)
+    desconhecido, pagina404 = responder("AAAAAAAAAAAAAAAAAAAAAA", {"estado": "confirmado"}), pedido(f"/c/{SLUG}/AAAAAAAAAAAAAAAAAAAAAA")
+    R.ok("resposta com token desconhecido: o mesmo 404 do convite (CA-RSVP-10)", desconhecido[0] == 404 and desconhecido[1] == pagina404[2])
+    invalidos = [{"estado": "talvez"}, {"estado": "confirmado", "pessoas": 3}, {"estado": "confirmado", "pessoas": 0},
+                 {"estado": "confirmado", "pessoas": "2a"}, {"estado": "recusado", "mensagem": "x" * 301}, b"nao e json", b"[]", b"null"]
+    estados = [responder(t, c)[0] for c in invalidos]
+    c_api = next(c for c in lista_api() if c["token"] == t)
+    R.ok("resposta inválida: 400 sem gravar (pessoas até ao número do convite, mensagem até 300)",
+         estados == [400] * len(invalidos) and c_api["estado"] == "pendente" and "resposta" not in c_api, f"estados={estados}")
+    estado, _ = responder(t, {"estado": "recusado", "mensagem": "  Boa   festa!  "})
+    c_api = next(c for c in lista_api() if c["token"] == t)
+    R.ok("resposta válida: 204, estado «não vem» e a mensagem guardada com a data",
+         estado == 204 and c_api["estado"] == "recusado" and c_api["resposta"]["mensagem"] == "Boa festa!" and c_api["resposta"]["em"])
+    seguidas = [responder(t, {"estado": "confirmado", "pessoas": 1})[0] for _ in range(9)]
+    R.ok("mais de 10 respostas numa hora no mesmo link: 429 (CA-RSVP-10)", seguidas == [204] * 9 and responder(t, {"estado": "recusado"})[0] == 429,
+         f"seguidas={seguidas}")
+
+    simultaneos = [novo(f"Convidado em simultâneo {i}", 3)["token"] for i in range(6)]
+    def tarefa(i):
+        base = BASE if i % 2 else BASE2
+        if i < 6:
+            return responder(simultaneos[i], {"estado": "confirmado", "pessoas": 2}, base=base)[0]
+        return pedido(f"/api/gestao/{SLUG}/convidados", "POST", {"nome": f"Família em simultâneo {i}"}, cookie=cookie, cabecalhos=X, base=base)[0]
+    with concurrent.futures.ThreadPoolExecutor(12) as ex:
+        estados = list(ex.map(tarefa, range(12)))
+    todos = lista_api()
+    gravadas = sum(c["token"] in simultaneos and c["estado"] == "confirmado" and c.get("pessoasConfirmadas") == 2 for c in todos)
+    cadastros = sum(c["nome"].startswith("Família em simultâneo") for c in todos)
+    R.ok("6 respostas de convidados e 6 cadastros da família em simultâneo, em 2 processos: nada se perde (CA-GES-17)",
+         estados == [204] * 6 + [201] * 6 and gravadas == 6 and cadastros == 6, f"estados={estados} gravadas={gravadas} cadastros={cadastros}")
+    for c in todos:
+        pedido(f"/api/gestao/{SLUG}/convidados/{c['token']}", "DELETE", cookie=cookie, cabecalhos=X)
+
+    _, cookie_fechado, _ = entrar(PIN, SLUG_FECHADO)
+    fora_do_prazo = novo("Convidado fora do prazo", 2, SLUG_FECHADO, cookie_fechado)
+    html_fechado = pedido(f"/c/{SLUG_FECHADO}/{fora_do_prazo['token']}")[2].decode()
+    R.ok("depois do prazo: formulário fechado e respostas recusadas com 410 (CA-RSVP-08)",
+         '"fechado": true' in html_fechado and responder(fora_do_prazo["token"], {"estado": "confirmado"}, slug=SLUG_FECHADO)[0] == 410)
 
     with sync_playwright() as p:
         b = p.chromium.launch()
@@ -307,40 +389,134 @@ def correr(R, capturas):
         R.ok("convite pessoal: «válido para 3 pessoas» (CA-PER-02)", "3 pessoas" in pg2.inner_text('[data-g="valido"]'))
         rsvp = pg2.get_attribute("[data-rsvp='0']", "href")
         R.ok("convite pessoal: confirmação com nome e pessoas (CA-RSVP-02/03)", rsvp.startswith(f"https://wa.me/{TEL_FAMILIA}?text=") and "Sr. Carlos Neto e Família (3 pessoas)" in urllib.parse.unquote(rsvp))
-        pg2.evaluate("document.querySelector('[data-rsvp]').scrollIntoView()")
+
+        # o convidado responde no convite: vamos 2 (de 3), com mensagem; grava e abre o WhatsApp no mesmo toque
+        pg2.evaluate("document.querySelector('[data-seccao=confirmacao]').scrollIntoView()")
+        R.ok("formulário no link pessoal: «Vamos» e as 3 pessoas do convite por omissão (CA-RSVP-06)",
+             pg2.is_checked("input[value=confirmado]") and pg2.inner_text("#resp-n") == "3")
+        pg2.click("label:has(input[value=recusado])")
+        recusa = urllib.parse.unquote(pg2.get_attribute("[data-rsvp='0']", "href"))
+        R.ok("«Não vamos»: sem pessoas, botão «Enviar resposta» e mensagem de recusa",
+             not pg2.is_visible("#resp-qtd") and pg2.inner_text("[data-rsvp='0']").strip().upper() == "ENVIAR RESPOSTA"
+             and "Lamento" in recusa and "Sr. Carlos Neto e Família" in recusa and "pessoas" not in recusa)
+        pg2.click("label:has(input[value=confirmado])")
+        pg2.click("button[aria-label='Menos uma pessoa']")
+        pg2.click("#resp-escrever")
+        pg2.fill("#resp-msg", "Parabéns, Beatriz!")
+        if capturas:
+            pg2.locator("[data-seccao=confirmacao]").screenshot(path=str(CAPTURAS / "12-convite-resposta.png"))
         with ctx2.expect_page() as nova:
             pg2.click("[data-rsvp='0']")
+        whatsapp = urllib.parse.unquote(nova.value.url)
         nova.value.close()
-        pg2.wait_for_timeout(600)
-        R.ok("convite pessoal: sem erros na consola (CA-QUA-01)", not erros2, "; ".join(erros2[:2]))
-        ctx2.close()
+        pg2.wait_for_selector("#resposta .resumo-rot:has-text('Resposta registada')")
+        c_api = next(c for c in json.loads(pedido(f"/api/gestao/{SLUG}/dados", cookie=cookie)[2])["convidados"] if c["token"] == carlos["token"])
+        R.ok("resposta no convite gravada: vem com 2 pessoas, com a mensagem e a data (CA-RSVP-06)",
+             c_api["estado"] == "confirmado" and c_api.get("pessoasConfirmadas") == 2 and c_api.get("resposta", {}).get("mensagem") == "Parabéns, Beatriz!"
+             and c_api["resposta"].get("em"), json.dumps(c_api.get("resposta")))
+        R.ok("o WhatsApp abre no mesmo toque, com as 2 pessoas e a mensagem (CA-RSVP-06)",
+             whatsapp.startswith(f"https://wa.me/{TEL_FAMILIA}?text=") and "Sr. Carlos Neto e Família (2 pessoas)" in whatsapp and "Parabéns, Beatriz!" in whatsapp, whatsapp[:120])
+        if capturas:
+            pg2.locator("[data-seccao=confirmacao]").screenshot(path=str(CAPTURAS / "13-convite-resposta-registada.png"))
 
         pg.reload()
         pg.wait_for_selector("li.cartao:has-text('Sr. Carlos Neto e Família') >> text=/Abriu \\d/")
         cartao = pg.locator("li.cartao", has_text="Sr. Carlos Neto e Família")
-        R.ok("painel: «Abriu» e «Tocou em confirmar» (CA-RSVP-05)", "Tocou em confirmar" in cartao.inner_text())
+        R.ok("painel: «Abriu», «Respondeu no convite» e a mensagem do convidado (CA-GES-08, CA-GES-16)",
+             "Respondeu no convite" in cartao.inner_text() and "«Parabéns, Beatriz!»" in cartao.inner_text() and "e-confirmado" in cartao.get_attribute("class"))
+        R.ok("a resposta do convite conta no resumo: 2 pessoas vêm", pg.inner_text(".r-vem strong") == "2")
 
-        # ver convite a partir da gestão não conta como abertura
+        # ver convite a partir da gestão não conta como abertura, e a resposta não é gravada
         tia = next(c for c in lista if c["nome"] == "Tia Joana")
         ctx3, pg3, _ = pagina(b)
         pg3.goto(tia["link"] + "?previa=1")
+        pg3.click("#envelope")
+        pg3.wait_for_timeout(2700)
+        with ctx3.expect_page() as nova:
+            pg3.click("[data-rsvp='0']")
+        nova.value.close()
         pg3.wait_for_timeout(500)
+        aviso_previa = pg3.inner_text("#aviso")
         ctx3.close()
+        c_api = next(c for c in json.loads(pedido(f"/api/gestao/{SLUG}/dados", cookie=cookie)[2])["convidados"] if c["token"] == tia["token"])
+        R.ok("pré-visualização: o formulário aparece, mas a resposta não é gravada (CA-RSVP-09)",
+             "não fica gravada" in aviso_previa and c_api["estado"] == "pendente" and "resposta" not in c_api, aviso_previa)
         pg.reload()
         pg.wait_for_selector("li.cartao:has-text('Tia Joana')")
         R.ok("«Ver convite» na gestão não conta como abertura", "Não abriu" in pg.locator("li.cartao", has_text="Tia Joana").inner_text())
 
-        # resposta: vem, com número de pessoas
-        cartao.get_by_role("button", name="Vem", exact=True).click()
-        pg.wait_for_selector("li.cartao.e-confirmado:has-text('Sr. Carlos Neto e Família')")
-        pg.locator("li.cartao", has_text="Sr. Carlos Neto e Família").locator("button[aria-label='Menos uma pessoa']").click()
+        # a família corrige à mão (menos uma pessoa); o convidado vê a correcção e volta a mudar no convite
+        cartao.locator("button[aria-label='Menos uma pessoa']").click()
+        pg.wait_for_function("document.querySelector('.r-vem strong').textContent === '1'")
+        R.ok("a família corrige a resposta: resumo e «A família alterou depois» (CA-GES-09, CA-GES-16)",
+             "No convite: vêm 2 pessoas. A família alterou depois." in pg.locator("li.cartao", has_text="Sr. Carlos Neto e Família").inner_text())
+        pg2.reload()
+        pg2.wait_for_selector("#resposta .resumo")
+        R.ok("ao reabrir, o convite mostra a resposta registada, com a correcção da família (CA-RSVP-07)",
+             pg2.inner_text("#resposta .resumo-val") == "Vou" and pg2.is_visible("#resp-alterar") and not pg2.is_visible("[data-rsvp='0']"))
+        pg2.click("#resp-alterar")
+        R.ok("«Alterar resposta»: o formulário volta com a resposta e a mensagem", pg2.inner_text("#resp-n") == "1" and pg2.input_value("#resp-msg") == "Parabéns, Beatriz!")
+        pg2.click("button[aria-label='Mais uma pessoa']")
+        with ctx2.expect_page() as nova:
+            pg2.click("[data-rsvp='0']")
+        nova.value.close()
+        pg2.wait_for_selector("#resposta .resumo-rot:has-text('Resposta registada')")
+        R.ok("convite pessoal: sem erros na consola (CA-QUA-01)", not erros2, "; ".join(erros2[:2]))
+        ctx2.close()
+        pg.reload()
         pg.wait_for_function("document.querySelector('.r-vem strong').textContent === '2'")
-        R.ok("resposta «Vem» com 2 pessoas: resumo actualizado", "2" == pg.inner_text(".r-vem strong"))
-        pg.locator("li.cartao", has_text="Ana e Rui Mendes").get_by_role("button", name="Não vem", exact=True).click()
+        R.ok("a nova resposta do convidado substitui a correcção da família",
+             "A família alterou depois" not in pg.locator("li.cartao", has_text="Sr. Carlos Neto e Família").inner_text())
+
+        # «Não vamos» no convite, num telemóvel de 320 px
+        ana = next(c for c in lista if c["nome"] == "Ana e Rui Mendes")
+        ctx3, pg3, erros3 = pagina(b, 320, 640)
+        pg3.goto(ana["link"])
+        pg3.click("#envelope")
+        pg3.wait_for_timeout(2700)
+        fora = pg3.evaluate("[...document.querySelectorAll('main *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.right>innerWidth+1&&!e.closest('.decor')&&!e.closest('.gal')}).length")
+        R.ok("320 px: formulário de resposta sem transbordo horizontal (CA-RES-01)", fora == 0, f"fora={fora}")
+        pg3.click("label:has(input[value=recusado])")
+        with ctx3.expect_page() as nova:
+            pg3.click("[data-rsvp='0']")
+        whatsapp = urllib.parse.unquote(nova.value.url)
+        nova.value.close()
+        pg3.wait_for_selector("#resposta .resumo-rot:has-text('Resposta registada')")
+        R.ok("«Não vamos» no convite: grava «não vem» e o WhatsApp leva a mensagem de recusa",
+             "Lamento" in whatsapp and "Ana e Rui Mendes" in whatsapp and pg3.inner_text("#resposta .resumo-val") == "Não vamos" and not erros3)
+        ctx3.close()
+        pg.reload()
         pg.wait_for_selector("li.cartao.e-recusado:has-text('Ana e Rui Mendes')")
+
+        # respostas marcadas pela família
+        pg.locator("li.cartao", has_text="Família Exemplo").get_by_role("button", name="Vem", exact=True).click()
+        pg.wait_for_function("document.querySelector('.r-vem strong').textContent === '6'")
+        R.ok("resposta «Vem» marcada pela família: resumo actualizado", "6" == pg.inner_text(".r-vem strong"))
+        pg.locator("li.cartao", has_text="Família Exemplo").get_by_role("button", name="Não vem", exact=True).click()
+        pg.wait_for_selector("li.cartao.e-recusado:has-text('Família Exemplo')")
         pg.click("button.chip:has-text('Não vêm')")
-        R.ok("filtro «Não vêm»", pg.locator("li.cartao").count() == 1)
+        R.ok("filtro «Não vêm»: a resposta do convite e a marcada pela família", pg.locator("li.cartao").count() == 2)
+        pg.get_by_role("button", name="Vêm", exact=True).click()
+        R.ok("filtro «Vêm»", pg.locator("li.cartao").count() == 1)
         pg.click("button.chip:has-text('Todos')")
+
+        # depois do prazo: o convite mostra os botões do WhatsApp e o toque fica registado
+        ctx3, pg3, _ = pagina(b)
+        pg3.goto(fora_do_prazo["link"])
+        pg3.click("#envelope")
+        pg3.wait_for_timeout(2700)
+        fechado = pg3.inner_text("#resposta")
+        if capturas:
+            pg3.locator("[data-seccao=confirmacao]").screenshot(path=str(CAPTURAS / "14-convite-prazo-terminado.png"))
+        with ctx3.expect_page() as nova:
+            pg3.click("[data-rsvp='0']")
+        nova.value.close()
+        pg3.wait_for_timeout(600)
+        ctx3.close()
+        c_api = json.loads(pedido(f"/api/gestao/{SLUG_FECHADO}/dados", cookie=cookie_fechado)[2])["convidados"][0]
+        R.ok("depois do prazo: botões do WhatsApp e «Tocou em confirmar» no painel (CA-RSVP-05, CA-RSVP-08)",
+             "O prazo para responder no convite terminou" in fechado and c_api["actividade"].get("confirmarEm") and c_api["estado"] == "pendente", fechado)
+
         pg.fill("input.pesquisa", "joana")
         R.ok("pesquisa por nome (sem acentos)", pg.locator("li.cartao").count() == 1)
         pg.fill("input.pesquisa", "")
@@ -375,6 +551,8 @@ def correr(R, capturas):
         estado, cab, corpo = pedido(f"/api/gestao/{SLUG}/exportar", cookie=cookie)
         texto = corpo.decode("utf-8")
         R.ok("exportar CSV para Excel (CA-PLA-08)", estado == 200 and texto.startswith("\ufeffNome;Pessoas;Telefone;Grupo;Estado") and "Sr. Carlos Neto e Família;3;+244 900 000 001;Família do pai;Confirmado;2" in texto)
+        R.ok("exportar: quando respondeu no convite e a mensagem do convidado (CA-GES-16)",
+             "Tocou em confirmar;Respondeu no convite;Mensagem do convidado;Notas;Link" in texto.split("\r\n")[0] and ";Parabéns, Beatriz!;" in texto)
         if capturas:
             pg.screenshot(path=str(CAPTURAS / "04-painel.png"), full_page=True)
 

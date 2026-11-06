@@ -16,10 +16,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const [{ lista }, actividade] = await Promise.all([lerLista(slug), lerActividade(slug)]);
   const origem = origemPublica(req);
   const linhas: (string | number | undefined)[][] = [
-    ["Nome", "Pessoas", "Telefone", "Grupo", "Estado", "Pessoas confirmadas", "Enviado em", "Aberto em", "Tocou em confirmar", "Notas", "Link"],
+    ["Nome", "Pessoas", "Telefone", "Grupo", "Estado", "Pessoas confirmadas", "Enviado em", "Aberto em", "Tocou em confirmar",
+      "Respondeu no convite", "Mensagem do convidado", "Notas", "Link"],
     ...lista.convidados.map((c) => [
       c.nome, c.pessoas, telefoneLegivel(c.telefone), c.grupo, ESTADO[c.estado], c.estado === "confirmado" ? (c.pessoasConfirmadas ?? c.pessoas) : "",
-      data(c.enviadoEm), data(actividade[c.token]?.abertoEm), data(actividade[c.token]?.confirmarEm), c.notas, `${origem}/c/${slug}/${c.token}`,
+      data(c.enviadoEm), data(actividade[c.token]?.abertoEm), data(actividade[c.token]?.confirmarEm),
+      data(c.resposta?.em), c.resposta?.mensagem, c.notas, `${origem}/c/${slug}/${c.token}`,
     ]),
   ];
   return new Response(paraCsv(linhas), {
