@@ -42,7 +42,7 @@ Para o anfitrião, o convite tem de ser **bonito, rápido de aprovar e fácil de
 - Convite com a experiência completa do [02](02-experiencia-do-convite.md): envelope, secções, personalização, confirmação (dentro do convite no link pessoal, com aviso pelo WhatsApp), mapas, calendário, contagem regressiva e computador.
 - Temas configuráveis (tokens de cor e arte) e ordem de secções configurável.
 - Back-office do operador para criar, editar, pré-visualizar e publicar convites.
-- **Zona de gestão de convidados para a família** (acesso por PIN, sem conta): cadastrar convidados um a um ou colando uma lista, links pessoais, envio pelo WhatsApp, aberturas, confirmações e exportação. **Já implementada** em [`apps/web`](../apps/web/) (ver [05](05-plataforma.md#zona-de-gestão-de-convidados)).
+- **Zona de gestão de convidados para a família** (acesso por PIN, sem conta): cadastrar convidados um a um, colando uma lista ou importando um ficheiro do Excel (CSV), links pessoais, envio pelo WhatsApp, aberturas, confirmações e exportação. **Já implementada** em [`apps/web`](../apps/web/) (ver [05](05-plataforma.md#zona-de-gestão-de-convidados)).
 - Tipos de evento: 15 anos. A estrutura tem de estar preparada para casamentos e aniversários.
 
 ### Fora (para já)

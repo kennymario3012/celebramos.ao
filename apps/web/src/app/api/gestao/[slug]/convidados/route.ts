@@ -1,8 +1,7 @@
-import { alterarLista, ErroValidacao, novoConvidado } from "@/lib/convidados";
+import { alterarLista, ErroValidacao, MAXIMO_CONVIDADOS, novoConvidado } from "@/lib/convidados";
 import { autorizar, erro, json } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
-const MAXIMO = 1000;
 
 /** Cadastrar um convidado. */
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -12,7 +11,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const corpo = await req.json().catch(() => ({}));
   try {
     const { resultado } = await alterarLista(slug, (lista) => {
-      if (lista.convidados.length >= MAXIMO) throw new ErroValidacao(`Máximo de ${MAXIMO} convidados.`);
+      if (lista.convidados.length >= MAXIMO_CONVIDADOS) throw new ErroValidacao(`Máximo de ${MAXIMO_CONVIDADOS} convidados.`);
       const c = novoConvidado(corpo, new Set(lista.convidados.map((x) => x.token)));
       lista.convidados.push(c);
       return c;

@@ -122,7 +122,8 @@ Objectivo: montar e alterar um convite sem tocar em código. Meta: ≤ 2 horas p
 | Entrar | PIN do evento. O ecrã de entrada só mostra o nome do evento. |
 | Resumo | Convites e pessoas convidadas, enviados, abriram, pessoas que vêm, não vêm, sem resposta. Depois do prazo de confirmação, o cabeçalho diz «prazo terminado». |
 | Adicionar convidado | Nome como aparece no envelope, pessoas (1–30), WhatsApp (opcional, normalizado para `244…`), grupo, notas. Avisa se o nome já existir. Tem «Gravar e adicionar outro». |
-| Colar lista | Um convidado por linha (`nome; pessoas; telefone; grupo`). Mostra a pré-visualização com as linhas inválidas assinaladas antes de importar. |
+| Colar lista | Um convidado por linha (`nome; pessoas; telefone; grupo`). Mostra a pré-visualização com as linhas inválidas assinaladas antes de importar. Os nomes repetidos ficam de fora, como em «Importar ficheiro». |
+| Importar ficheiro | «Descarregar modelo» dá um CSV para preencher no Excel. A família escolhe o ficheiro preenchido e vê a pré-visualização antes de gravar: linhas prontas, erros por linha (com o número da linha do Excel) e linhas que ficam de fora. Mesmas regras e mesma gravação que «Colar lista». Pormenores em [Lista](#lista). |
 | Enviar pelo WhatsApp | Abre `wa.me` com a mensagem e o link pessoal e marca «Enviado». A mensagem é editável, com `{convidado}`, `{homenageado}`, `{dataCurta}`, `{hora}`, `{pessoas}` e `{link}` (obrigatório). |
 | Copiar link, Ver convite | «Ver convite» abre com `?previa=1`, que não conta como abertura. |
 | Resposta | Sem resposta, Vem (com o número de pessoas que vêm) ou Não vem. O convidado responde no convite ([Confirmações](#confirmações)), e a família pode marcar ou corrigir à mão. Se a família alterar a resposta do convidado, o cartão mostra o que ele respondeu. |
@@ -133,7 +134,7 @@ Objectivo: montar e alterar um convite sem tocar em código. Meta: ≤ 2 horas p
 | Exportar | CSV para o Excel (separador `;`, BOM UTF-8): nome, pessoas, telefone, grupo, estado, pessoas confirmadas, datas (envio, abertura, toque em «Confirmar», resposta no convite), mensagem do convidado, notas, link. |
 | Vários familiares | Gravação com concorrência optimista (ETag). Alterações em simultâneo, da família ou dos convidados, não se perdem. A lista actualiza ao voltar à página e de 30 em 30 segundos. |
 
-Ainda não implementado: importar ficheiros CSV ou Excel, contactos do telemóvel, partilha nativa, lembretes e ligar ou desligar o link geral na interface.
+Ainda não implementado: importar ficheiros do Excel (`.xlsx`), contactos do telemóvel, partilha nativa, lembretes e ligar ou desligar o link geral na interface.
 
 ## Convidados
 
@@ -147,9 +148,14 @@ Ainda não implementado: importar ficheiros CSV ou Excel, contactos do telemóve
   Tia Joana
   ```
   Sem número de pessoas, assume 1. Mostrar uma pré-visualização com os erros assinalados antes de importar.
-- **Importar CSV ou Excel** (colunas `nome`, `pessoas`, `telefone`, `etiqueta`).
+- **Importar um ficheiro CSV** *(implementado; o `.xlsx` fica para depois)*:
+  - **Modelo** («Descarregar modelo», `modelo-convidados.csv`): CSV como a exportação, com separador `;` (o do Excel em português, que usa a vírgula nas casas decimais) e BOM UTF-8, para os acentos aparecerem bem. Colunas `Nome no convite; Pessoas; Telefone (WhatsApp); Grupo; Notas (só para a família)` e dois exemplos com telefones fictícios. Se os exemplos ficarem no ficheiro, não são importados.
+  - **Leitura:** o navegador lê o ficheiro (UTF-8 com ou sem BOM, Windows-1252 dos CSV do Excel antigo, UTF-16 do «Texto Unicode») e envia o texto. O separador é o mais frequente na primeira linha: `;`, `,` (Google Sheets, Numbers, Excel em inglês) ou tabulação. Aceita campos entre aspas (com `""` e quebras de linha), fins de linha CRLF, LF ou CR e linhas vazias, que são saltadas.
+  - **Colunas** reconhecidas pelo título, por qualquer ordem, sem contar acentos, maiúsculas nem o que está entre parênteses: as do modelo e outras habituais («Nome», «Telemóvel», «WhatsApp», «Contacto», «Etiqueta», «Observações»…). As outras colunas são ignoradas, por isso o CSV exportado também se lê. Sem a linha dos títulos, cada linha é lida como em «Colar lista», com um aviso na pré-visualização.
+  - **Telefones** como no cadastro: `+244 923 000 000`, `00244…`, `244…` ou os 9 algarismos, com ou sem espaços. Se o Excel tiver transformado o número em `2,44923E+11`, a linha diz que o telefone se estragou e como o escrever.
+  - **Mensagens claras** para um ficheiro do Excel (`.xlsx` ou `.xls`), com mais de 500 KB, vazio, só com os títulos, sem a coluna do nome, com aspas por fechar ou com mais de 1000 convidados (o máximo da lista).
 - **Contactos do telemóvel** (opcional): Contact Picker API onde existir (Chrome para Android).
-- Detectar duplicados (mesmo nome ou telefone).
+- **Duplicados** *(implementado na importação)*: ao colar ou importar, uma linha com o nome de alguém da lista ou de uma linha anterior (sem contar acentos nem maiúsculas) fica de fora, por isso importar o mesmo ficheiro duas vezes não duplica ninguém. Um telefone repetido só é assinalado, porque pode ser o contacto de vários convites. A verificação repete-se ao gravar, com a lista do momento. No cadastro um a um, o nome repetido só dá um aviso.
 
 ### Links e envio
 
@@ -216,7 +222,8 @@ Todas as respostas de `/c/` levam `X-Robots-Tag: noindex, nofollow`, e as págin
 | `POST /api/gestao/{slug}/entrar` · `/sair` | Entrar com `{pin}` (cookie de sessão) e sair |
 | `GET /api/gestao/{slug}/dados` | Evento, mensagem de envio e convidados com o link e a actividade |
 | `POST /api/gestao/{slug}/convidados` | Cadastrar |
-| `POST /api/gestao/{slug}/convidados/importar` | `{texto}` dá a pré-visualização. `{texto, confirmar: true}` grava |
+| `POST /api/gestao/{slug}/convidados/importar` | `{texto, formato}` dá a pré-visualização (`formato`: `lista`, por omissão, ou `csv`). Com `confirmar: true` grava as linhas prontas |
+| `GET /api/gestao/{slug}/convidados/modelo` | Modelo CSV para importar |
 | `PATCH/DELETE /api/gestao/{slug}/convidados/{token}` | Alterar (dados, `estado`, `pessoasConfirmadas`, `enviado`, `novoLink`) ou apagar |
 | `PUT /api/gestao/{slug}/mensagem` | Mensagem do WhatsApp |
 | `GET /api/gestao/{slug}/exportar` | CSV |

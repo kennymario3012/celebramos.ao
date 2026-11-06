@@ -48,12 +48,23 @@ interface Dados {
   mensagemEnvio: string;
   convidados: Convidado[];
 }
+/** Linha da pré-visualização de uma importação (lista colada ou ficheiro CSV). */
 interface LinhaImportada {
+  /** Número da linha (no ficheiro, o do Excel). */
   linha: number;
+  texto: string;
   ok: boolean;
   convidado?: { nome: string; pessoas: number; telefone?: string; grupo?: string };
-  texto?: string;
+  /** Pronta, mas a conferir (telefone repetido). */
+  aviso?: string;
   erro?: string;
+  /** Posta de parte (repetida ou exemplo do modelo): `erro` diz porquê. */
+  ignorada?: boolean;
+}
+interface Previa {
+  linhas: LinhaImportada[];
+  /** O ficheiro não tem a linha dos títulos: as colunas foram reconhecidas pelo conteúdo. */
+  semTitulos?: boolean;
 }
 type Filtro = "todos" | "por-enviar" | "enviados" | "abriram" | "nao-abriram" | "confirmados" | "recusados" | "pendentes";
 type Dialogo =
@@ -61,7 +72,9 @@ type Dialogo =
   | { tipo: "editar"; convidado: Convidado }
   | { tipo: "apagar"; convidado: Convidado }
   | { tipo: "colar" }
+  | { tipo: "ficheiro" }
   | { tipo: "mensagem" };
+type Mudar = <T>(accao: () => Promise<T>, sucesso?: string | ((resultado: T) => string)) => Promise<boolean>;
 
 class ErroApi extends Error {
   constructor(mensagem: string, public estado: number, public dados: Record<string, unknown>) {
@@ -89,6 +102,8 @@ const preencher = (modelo: string, v: Record<string, string>) =>
   modelo.replace(/\{(\w+)\}/g, (inteiro, k: string) => (k in v ? v[k] : inteiro));
 
 const pessoasTxt = (n: number) => `${n} ${n === 1 ? "pessoa" : "pessoas"}`;
+const convidadosTxt = (n: number) => `${n} ${n === 1 ? "convidado" : "convidados"}`;
+const importados = (r: { criados: number }) => `${convidadosTxt(r.criados)} ${r.criados === 1 ? "importado" : "importados"}.`;
 
 /** O que o convidado respondeu no convite, visto pela família. */
 function respostaTxt(r: NonNullable<Convidado["resposta"]>) {
@@ -208,11 +223,11 @@ export default function Gestao({ slug }: { slug: string }) {
     return () => clearInterval(id);
   }, [carregar, fase, dialogo, ocupado]);
 
-  async function mudar(accao: () => Promise<unknown>, sucesso?: string) {
+  const mudar: Mudar = async (accao, sucesso) => {
     setOcupado(true);
     try {
-      await accao();
-      if (sucesso) mostrarAviso(sucesso);
+      const resultado = await accao();
+      if (sucesso) mostrarAviso(typeof sucesso === "function" ? sucesso(resultado) : sucesso);
       await carregar(true);
       return true;
     } catch (e) {
@@ -223,7 +238,7 @@ export default function Gestao({ slug }: { slug: string }) {
     } finally {
       setOcupado(false);
     }
-  }
+  };
 
   const estilo = useMemo(() => {
     const c = cabecalho.cores || {};
@@ -316,6 +331,9 @@ export default function Gestao({ slug }: { slug: string }) {
           {dialogo.tipo === "colar" && (
             <ColarLista slug={slug} ocupado={ocupado} aoFechar={() => setDialogo(null)} mudar={mudar} />
           )}
+          {dialogo.tipo === "ficheiro" && (
+            <ImportarFicheiro slug={slug} ocupado={ocupado} aoFechar={() => setDialogo(null)} mudar={mudar} />
+          )}
           {dialogo.tipo === "mensagem" && (
             <EditarMensagem
               dados={dados}
@@ -395,7 +413,7 @@ interface PropsPainel {
   pesquisa: string;
   setPesquisa: (s: string) => void;
   abrir: (d: Dialogo) => void;
-  mudar: (accao: () => Promise<unknown>, sucesso?: string) => Promise<boolean>;
+  mudar: Mudar;
   mostrarAviso: (s: string) => void;
   sair: () => void;
 }
@@ -450,6 +468,7 @@ function Painel({ slug, dados, filtro, setFiltro, pesquisa, setPesquisa, abrir, 
       <section className="accoes">
         <button className="b b-principal" onClick={() => abrir({ tipo: "novo" })}>+ Adicionar convidado</button>
         <button className="b" onClick={() => abrir({ tipo: "colar" })}>Colar lista</button>
+        <button className="b" onClick={() => abrir({ tipo: "ficheiro" })}>Importar ficheiro</button>
         <button className="b" onClick={() => abrir({ tipo: "mensagem" })}>Mensagem do WhatsApp</button>
         <a className="b" href={`/api/gestao/${slug}/exportar`} download>Exportar (Excel)</a>
       </section>
@@ -485,7 +504,7 @@ function Painel({ slug, dados, filtro, setFiltro, pesquisa, setPesquisa, abrir, 
       {convidados.length === 0 ? (
         <div className="vazio">
           <p><strong>Ainda não há convidados.</strong></p>
-          <p>Adicione um de cada vez, ou cole a lista que já tem (por exemplo, das notas do telemóvel).</p>
+          <p>Adicione um de cada vez, cole a lista que já tem (por exemplo, das notas do telemóvel) ou importe um ficheiro do Excel.</p>
           <p className="suave">Cada convidado recebe um link só seu, com o nome dele no envelope e o número de pessoas do convite.</p>
         </div>
       ) : visiveis.length === 0 ? (
@@ -691,7 +710,48 @@ function FormConvidado({
   );
 }
 
-function ColarLista({ slug, ocupado, aoFechar, mudar }: { slug: string; ocupado: boolean; aoFechar: () => void; mudar: PropsPainel["mudar"] }) {
+/** Pré-visualização de uma importação: primeiro as linhas com erros e as que ficam de fora, depois as prontas. */
+function PreviaImportacao({ linhas, semTitulos }: Previa) {
+  const prontas = linhas.flatMap((l) => (l.ok && l.convidado ? [{ ...l, convidado: l.convidado }] : []));
+  const erros = linhas.filter((l) => !l.ok && !l.ignorada);
+  const deFora = linhas.filter((l) => !l.ok && l.ignorada);
+  const descrever = (l: LinhaImportada) => `Linha ${l.linha} («${l.texto}»): ${l.erro}`;
+  return (
+    <div className="previa">
+      <p><strong>{prontas.length}</strong> de {linhas.length} linhas prontas a importar.</p>
+      {semTitulos && (
+        <p className="nota">O ficheiro não tem a linha dos títulos do modelo: as colunas foram reconhecidas pelo conteúdo. Confira antes de importar.</p>
+      )}
+      {erros.length > 0 && (
+        <>
+          <p className="erro">{erros.length === 1 ? "1 linha com erros, que não é importada:" : `${erros.length} linhas com erros, que não são importadas:`}</p>
+          <ul>{erros.map((l) => <li key={l.linha} className="erro">{descrever(l)}</li>)}</ul>
+        </>
+      )}
+      {deFora.length > 0 && (
+        <>
+          <p>{deFora.length === 1 ? "1 linha fica de fora:" : `${deFora.length} linhas ficam de fora:`}</p>
+          <ul>{deFora.map((l) => <li key={l.linha}>{descrever(l)}</li>)}</ul>
+        </>
+      )}
+      {prontas.length > 0 && (erros.length > 0 || deFora.length > 0) && <p>Prontas a importar:</p>}
+      {prontas.length > 0 && (
+        <ul>
+          {prontas.map(({ linha, convidado: c, aviso }) => (
+            <li key={linha}>
+              {c.nome} · {pessoasTxt(c.pessoas)}
+              {c.telefone && <> · {telefoneLegivel(c.telefone)}</>}
+              {c.grupo && <> · {c.grupo}</>}
+              {aviso && <span className="previa-aviso">Linha {linha}: {aviso}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ColarLista({ slug, ocupado, aoFechar, mudar }: { slug: string; ocupado: boolean; aoFechar: () => void; mudar: Mudar }) {
   const [texto, setTexto] = useState("");
   const [linhas, setLinhas] = useState<LinhaImportada[] | null>(null);
   const [erro, setErro] = useState("");
@@ -710,20 +770,7 @@ function ColarLista({ slug, ocupado, aoFechar, mudar }: { slug: string; ocupado:
           setLinhas(null);
         }} />
       {erro && <p className="erro" role="alert">{erro}</p>}
-      {linhas && (
-        <div className="previa">
-          <p><strong>{validas}</strong> de {linhas.length} linhas prontas a importar.</p>
-          <ul>
-            {linhas.map((l) => (
-              <li key={l.linha} className={l.ok ? "" : "erro"}>
-                {l.ok && l.convidado
-                  ? `${l.convidado.nome} · ${pessoasTxt(l.convidado.pessoas)}${l.convidado.telefone ? " · " + telefoneLegivel(l.convidado.telefone) : ""}${l.convidado.grupo ? " · " + l.convidado.grupo : ""}`
-                  : `Linha ${l.linha} («${l.texto}»): ${l.erro}`}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {linhas && <PreviaImportacao linhas={linhas} />}
       <div className="j-accoes">
         <button className="b" onClick={aoFechar}>Cancelar</button>
         {!linhas ? (
@@ -742,12 +789,110 @@ function ColarLista({ slug, ocupado, aoFechar, mudar }: { slug: string; ocupado:
         ) : (
           <button className="b b-principal" disabled={!validas || ocupado}
             onClick={async () => {
-              const ok = await mudar(() => api(slug, "convidados/importar", "POST", { texto, confirmar: true }), `${validas} convidados importados.`);
+              const ok = await mudar(() => api(slug, "convidados/importar", "POST", { texto, confirmar: true }), importados);
               if (ok) aoFechar();
             }}>
-            Importar {validas} convidados
+            Importar {convidadosTxt(validas)}
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+/** 500 KB, como o servidor (500 000 caracteres): uma lista de 1000 convidados em CSV tem bem menos. */
+const MAXIMO_FICHEIRO = 500_000;
+
+const tamanho = (bytes: number) =>
+  bytes < 1_000_000 ? `${Math.ceil(bytes / 1000)} KB` : `${(bytes / 1_000_000).toLocaleString("pt-PT", { maximumFractionDigits: 1 })} MB`;
+
+/**
+ * Lê o ficheiro escolhido como texto. O Excel grava o CSV em UTF-8 («CSV UTF-8») ou, em «CSV (delimitado
+ * por vírgulas)» e nas versões antigas, em Windows-1252. O «Texto Unicode» do Excel é UTF-16.
+ */
+async function lerFicheiro(f: File) {
+  if (f.size > MAXIMO_FICHEIRO) {
+    throw new Error(`O ficheiro tem ${tamanho(f.size)} e o máximo são 500 KB. Uma lista de convidados em CSV tem muito menos: confirme que escolheu o ficheiro certo.`);
+  }
+  const b = new Uint8Array(await f.arrayBuffer());
+  if (!b.length) throw new Error("O ficheiro está vazio.");
+  // .xlsx (ZIP) ou .xls antigo
+  if ((b[0] === 0x50 && b[1] === 0x4b) || (b[0] === 0xd0 && b[1] === 0xcf)) {
+    throw new Error("Este ficheiro está no formato do Excel (.xlsx), não em CSV. No Excel, use Ficheiro › Guardar como e escolha o tipo «CSV UTF-8 (delimitado por vírgulas)».");
+  }
+  if (b[0] === 0xff && b[1] === 0xfe) return new TextDecoder("utf-16le").decode(b);
+  if (b[0] === 0xfe && b[1] === 0xff) return new TextDecoder("utf-16be").decode(b);
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(b);
+  } catch {
+    return new TextDecoder("windows-1252").decode(b);
+  }
+}
+
+function ImportarFicheiro({ slug, ocupado, aoFechar, mudar }: { slug: string; ocupado: boolean; aoFechar: () => void; mudar: Mudar }) {
+  const [ficheiro, setFicheiro] = useState<{ nome: string; texto: string } | null>(null);
+  const [previa, setPrevia] = useState<Previa | null>(null);
+  const [erro, setErro] = useState("");
+  const [aLer, setALer] = useState(false);
+  const prontas = previa?.linhas.filter((l) => l.ok).length ?? 0;
+
+  async function escolher(f: File) {
+    setFicheiro(null);
+    setPrevia(null);
+    setErro("");
+    setALer(true);
+    try {
+      const texto = await lerFicheiro(f);
+      setPrevia(await api(slug, "convidados/importar", "POST", { texto, formato: "csv" }));
+      setFicheiro({ nome: f.name, texto });
+    } catch (e) {
+      setErro((e as Error).message);
+    } finally {
+      setALer(false);
+    }
+  }
+
+  return (
+    <div className="j-conteudo">
+      <h2>Importar ficheiro</h2>
+      <ol className="passos">
+        <li>
+          Descarregue o modelo e abra-o no Excel.
+          <a className="b b-pequeno" href={`/api/gestao/${slug}/convidados/modelo`} download>Descarregar modelo</a>
+        </li>
+        <li>
+          Escreva um convidado por linha, a partir da linha 2, e apague os exemplos. Só o nome é obrigatório (sem número, conta 1 pessoa).
+          Escreva os telefones com espaços, como 923 000 000, para o Excel não os estragar.
+        </li>
+        <li>
+          Guarde o ficheiro sem mudar o formato (CSV) e escolha-o aqui.
+          <label className="b b-pequeno b-ficheiro">
+            {ficheiro ? "Escolher outro ficheiro" : "Escolher ficheiro"}
+            <input
+              type="file"
+              accept=".csv,.txt,text/csv,text/plain,text/comma-separated-values,application/csv,application/vnd.ms-excel"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = ""; // para voltar a escolher o mesmo ficheiro depois de o corrigir
+                if (f) escolher(f);
+              }}
+            />
+          </label>
+        </li>
+      </ol>
+      {aLer && <p className="nota" role="status">A ler o ficheiro…</p>}
+      {ficheiro && <p className="nota">Ficheiro: {ficheiro.nome}</p>}
+      {erro && <p className="erro" role="alert">{erro}</p>}
+      {previa && <PreviaImportacao {...previa} />}
+      <div className="j-accoes">
+        <button className="b" onClick={aoFechar}>Cancelar</button>
+        <button className="b b-principal" disabled={!ficheiro || !prontas || ocupado}
+          onClick={async () => {
+            const ok = await mudar(() => api(slug, "convidados/importar", "POST", { texto: ficheiro!.texto, formato: "csv", confirmar: true }), importados);
+            if (ok) aoFechar();
+          }}>
+          {previa ? `Importar ${convidadosTxt(prontas)}` : "Importar"}
+        </button>
       </div>
     </div>
   );

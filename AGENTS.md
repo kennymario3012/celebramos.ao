@@ -84,7 +84,7 @@ npm run semear         # eventos fictícios em .dados-locais/ (PIN 123456)
 npm run dev            # http://localhost:3000/gestao/exemplo-bela-principe
 npm run tipos
 npm run pacote         # build + pacote do cPanel em dist/celebramos-web (server.js)
-python3 testes/e2e.py  # 72 verificações, contra o pacote em 2 processos
+python3 testes/e2e.py  # 89 verificações, contra o pacote em 2 processos
 ```
 
 A plataforma fica alojada no **cPanel** do titular ([decisão 0002](docs/decisoes/0002-alojamento-no-cpanel.md)): Node.js com Passenger e dados em ficheiros fora da aplicação (`CELEBRAMOS_DADOS`). Nada de dependências que exijam serviços externos sem decisão do titular.

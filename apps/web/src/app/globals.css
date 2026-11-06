@@ -243,7 +243,7 @@ label {
   flex: 1 1 100%;
 }
 .accoes .b:not(.b-principal) {
-  flex: 1 1 30%;
+  flex: 1 1 40%;
 }
 .geral {
   display: flex;
@@ -489,12 +489,51 @@ label {
 .f-cresce {
   flex: 1;
 }
+.previa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
 .previa ul {
-  margin: 0.4rem 0 0;
+  margin: 0 0 0.3rem;
   padding-left: 1.1rem;
   max-height: 14rem;
   overflow-y: auto;
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.previa-aviso {
+  display: block;
+  color: #8a5a00;
+  font-size: 0.85rem;
+}
+.passos {
+  margin: 0.25rem 0;
+  padding-left: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  font-size: 0.95rem;
+}
+.passos .b {
+  display: flex;
+  width: fit-content;
+  margin-top: 0.4rem;
+}
+.b-ficheiro {
+  position: relative;
+  overflow: hidden;
+  font-weight: 400;
+}
+.b-ficheiro input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.b-ficheiro:focus-within {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
 }
 .previa-msg {
   white-space: pre-wrap;

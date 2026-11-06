@@ -41,6 +41,7 @@ TEL_FAMILIA = "244900000000"  # fictício
 CAPTURAS = APP / "testes" / "_capturas"
 
 SLUG_FECHADO = "exemplo-bela-principe-fechado"  # cópia com o prazo de confirmação já passado
+SLUG_IMPORTAR = "exemplo-bela-principe-importar"  # cópia para a importação de ficheiros, com a lista à parte
 X = {"X-Celebramos": "1"}
 
 
@@ -112,6 +113,7 @@ def preparar_dados(pasta):
     d = json.loads(ev.read_text())
     d["linkGeralActivo"] = False
     ev.write_text(json.dumps(d))
+    shutil.copytree(pasta / "eventos" / SLUG, pasta / "eventos" / SLUG_IMPORTAR)
 
 
 def pagina(browser, w=375, h=812, movel=True):
@@ -313,6 +315,96 @@ def correr(R, capturas):
     html_fechado = pedido(f"/c/{SLUG_FECHADO}/{fora_do_prazo['token']}")[2].decode()
     R.ok("depois do prazo: formulário fechado e respostas recusadas com 410 (CA-RSVP-08)",
          '"fechado": true' in html_fechado and responder(fora_do_prazo["token"], {"estado": "confirmado"}, slug=SLUG_FECHADO)[0] == 410)
+
+    print("Zona de gestão: importar ficheiro CSV (pedidos)")
+    _, cookie_imp, _ = entrar(PIN, SLUG_IMPORTAR)
+
+    def importar(texto, confirmar=False, formato="csv"):
+        corpo = {"texto": texto, "formato": formato, **({"confirmar": True} if confirmar else {})}
+        estado, _, resposta = pedido(f"/api/gestao/{SLUG_IMPORTAR}/convidados/importar", "POST", corpo, cookie=cookie_imp, cabecalhos=X)
+        return estado, json.loads(resposta)
+
+    estado, cab, corpo = pedido(f"/api/gestao/{SLUG_IMPORTAR}/convidados/modelo", cookie=cookie_imp)
+    modelo = corpo.decode("utf-8")
+    R.ok("modelo CSV para o Excel: BOM, «;», os títulos das colunas e 2 exemplos; sem sessão, 401 (CA-GES-18)",
+         estado == 200 and cab.get("content-type", "").startswith("text/csv") and 'filename="modelo-convidados.csv"' in cab.get("content-disposition", "")
+         and modelo.startswith("\ufeffNome no convite;Pessoas;Telefone (WhatsApp);Grupo;Notas (só para a família)\r\n") and modelo.count("\r\n") == 3
+         and pedido(f"/api/gestao/{SLUG_IMPORTAR}/convidados/modelo")[0] == 401, modelo[:120])
+    estado, r = importar(modelo)
+    R.ok("o modelo por preencher: os 2 exemplos ficam de fora (CA-GES-18)",
+         estado == 200 and [(l["ok"], l.get("ignorada"), l.get("erro")) for l in r["linhas"]] == [(False, True, "Exemplo do modelo: apague esta linha.")] * 2, r)
+
+    pedido(f"/api/gestao/{SLUG_IMPORTAR}/convidados", "POST", {"nome": "Sr. Exemplo Já Cadastrado", "pessoas": 2, "telefone": "900 000 109"},
+           cookie=cookie_imp, cabecalhos=X)
+    csv = ("\ufeffNome no convite;Pessoas;Telefone (WhatsApp);Grupo;Notas (só para a família)\r\n"
+           '"Família Neto; ramo de Benguela";4;+244 900 000 101;Família do pai;"Disse ""talvez"""\r\n'
+           "Avó Rosa;1;900000102;Família da mãe;\r\n"
+           ";;;;\r\n"
+           "Primos Exemplo;3 pessoas;00244 900 000 103;;\r\n"
+           "Tio Exemplo;2;2,44900E+11;;\r\n"
+           ";2;900 000 104;;\r\n"
+           "Madrinha Exemplo;0;;;\r\n"
+           "Vizinhos Exemplo;2;244 900 000 101;Vizinhos;\r\n"
+           "avó rosa;1;;;\r\n"
+           "Sr. Exemplo já cadastrado;2;;;\r\n"
+           "Esposa do Sr. Exemplo;1;900 000 109;;\r\n")
+    estado, r = importar(csv)
+    por_linha = {l["linha"]: l for l in r.get("linhas", [])}
+    def campo(n, nome):
+        return por_linha.get(n, {}).get("convidado", {}).get(nome)
+    R.ok("CSV com «;», BOM, aspas e linhas vazias: os campos certos e o número da linha do Excel (CA-GES-19)",
+         estado == 200 and sorted(por_linha) == [2, 3, 5, 6, 7, 8, 9, 10, 11, 12] and campo(2, "nome") == "Família Neto; ramo de Benguela"
+         and campo(2, "pessoas") == 4 and campo(2, "grupo") == "Família do pai" and campo(2, "notas") == 'Disse "talvez"' and campo(5, "pessoas") == 3, r)
+    R.ok("telefones com +244, 00244, 244 ou só os 9 algarismos, com ou sem espaços (CA-GES-19)",
+         [campo(n, "telefone") for n in (2, 3, 5, 9)] == ["244900000101", "244900000102", "244900000103", "244900000101"])
+    erros_csv = {n: por_linha.get(n, {}) for n in (6, 7, 8)}
+    R.ok("erros por linha: telefone estragado pelo Excel, nome em falta, pessoas fora do limite (CA-GES-18)",
+         all(l.get("ok") is False and not l.get("ignorada") for l in erros_csv.values())
+         and erros_csv[6].get("erro", "").startswith("O Excel transformou o telefone em «2,44900E+11».")
+         and erros_csv[7].get("erro") == "Falta o nome." and "entre 1 e 30" in erros_csv[8].get("erro", ""), erros_csv)
+    R.ok("repetidos: o nome de alguém da lista ou de uma linha anterior fica de fora; o mesmo telefone só é assinalado (CA-GES-18)",
+         por_linha.get(10, {}).get("ignorada") and por_linha[10].get("erro") == "Repete a linha 3."
+         and por_linha.get(11, {}).get("ignorada") and por_linha[11].get("erro") == "Já está na lista."
+         and por_linha.get(9, {}).get("aviso") == "Mesmo telefone que a linha 2."
+         and por_linha.get(12, {}).get("aviso") == "Mesmo telefone que «Sr. Exemplo Já Cadastrado».", [por_linha.get(n) for n in (9, 10, 11, 12)])
+    _, virgulas = importar('Telemóvel,Nome,Etiqueta,Observações,Pessoas\n900 000 121,"Ana, Rui e filhos",Escola,,4\n')
+    _, tabulacoes = importar("Nome\tPessoas\tTelefone\r\nPrimo Exemplo\t2\t900 000 122\r\n")
+    R.ok("CSV com «,» (Google Sheets) ou tabulação, colunas por outra ordem e outros títulos (CA-GES-19)",
+         [l.get("convidado") for l in virgulas.get("linhas", [])] == [{"nome": "Ana, Rui e filhos", "pessoas": 4, "telefone": "244900000121", "grupo": "Escola"}]
+         and [l.get("convidado") for l in tabulacoes.get("linhas", [])] == [{"nome": "Primo Exemplo", "pessoas": 2, "telefone": "244900000122"}],
+         f"{virgulas} {tabulacoes}")
+    estado, r = importar("Tia Exemplo;2;900 000 131\nSobrinho Exemplo\n")
+    R.ok("CSV sem a linha dos títulos: cada linha lida como em «Colar lista», com um aviso",
+         estado == 200 and r.get("semTitulos") is True and [l.get("convidado") for l in r["linhas"]]
+         == [{"nome": "Tia Exemplo", "pessoas": 2, "telefone": "244900000131"}, {"nome": "Sobrinho Exemplo", "pessoas": 1}], r)
+    invalidos = {
+        "vazio": ("", "O ficheiro está vazio."),
+        "só os títulos": ("Nome no convite;Pessoas\r\n;;\r\n", "O ficheiro só tem a linha dos títulos."),
+        "sem a coluna do nome": ("Pessoas;Telefone;Grupo\n2;900 000 141;Escola\n", "Falta a coluna «Nome no convite»."),
+        "aspas por fechar": ('Nome;Pessoas\n"Tia Exemplo;2\n', "Há umas aspas por fechar na linha 2."),
+        "binário": ("PK\x03\x04\x00\x00", "Este ficheiro não parece uma lista de convidados em CSV."),
+        "mais de 500 KB": ("Nome\n" + "x" * 500_000, "O ficheiro é grande demais (máximo 500 KB)."),
+        "mais de 1000 linhas": ("Nome\n" + "".join(f"Convidado {i}\n" for i in range(1001)), "O ficheiro tem mais de 1000 convidados"),
+        "a lista passaria de 1000": ("Nome\n" + "".join(f"Convidado {i}\n" for i in range(1000)), "A lista passaria de 1000 convidados: já tem 1"),
+    }
+    respostas = {k: importar(texto) for k, (texto, _) in invalidos.items()}
+    falhas = [k for k, (_, msg) in invalidos.items() if respostas[k][0] != 400 or not respostas[k][1].get("erro", "").startswith(msg)]
+    R.ok("ficheiro vazio, inválido, grande demais ou que passa de 1000 convidados: 400 com uma mensagem clara (CA-GES-19)",
+         not falhas, "; ".join(f"{k}: {respostas[k]}" for k in falhas)[:300])
+    estado, r = importar(csv, confirmar=True)
+    importados_api = lista_api(SLUG_IMPORTAR, cookie_imp)
+    R.ok("importar grava só as linhas prontas, cada uma com o seu link (CA-GES-18)",
+         estado == 200 and r == {"criados": 5, "ignoradas": 5} and len({c["token"] for c in importados_api}) == 6
+         and sorted(c["nome"] for c in importados_api) == sorted(["Sr. Exemplo Já Cadastrado", "Família Neto; ramo de Benguela", "Avó Rosa",
+                                                                  "Primos Exemplo", "Vizinhos Exemplo", "Esposa do Sr. Exemplo"]), r)
+    estado_outra_vez, outra_vez = importar(csv, confirmar=True)
+    _, exportado = importar(pedido(f"/api/gestao/{SLUG_IMPORTAR}/exportar", cookie=cookie_imp)[2].decode("utf-8"))
+    R.ok("importar o mesmo ficheiro outra vez não duplica ninguém, e o CSV exportado volta a ser lido (CA-GES-18)",
+         estado_outra_vez == 400 and outra_vez.get("erro") == "Estes convidados já estão na lista." and len(lista_api(SLUG_IMPORTAR, cookie_imp)) == 6
+         and [(l.get("ignorada"), l.get("erro")) for l in exportado.get("linhas", [])] == [(True, "Já está na lista.")] * 6, f"{outra_vez} {exportado}"[:300])
+    estado, r = importar("Avó Rosa\nNova Prima Exemplo; 2", formato="lista")
+    R.ok("colar lista: quem já está na lista fica de fora, como no ficheiro (CA-GES-05)",
+         estado == 200 and [(l["ok"], l.get("erro")) for l in r["linhas"]] == [(False, "Já está na lista."), (True, None)], r)
 
     with sync_playwright() as p:
         b = p.chromium.launch()
@@ -618,6 +710,57 @@ def correr(R, capturas):
         if capturas:
             pg6.screenshot(path=str(CAPTURAS / "11-convite-galeria.png"))
         ctx6.close()
+
+        print("Zona de gestão: importar ficheiro (interface)")
+        ctx7, pg7, erros7 = pagina(b)
+        ctx7.add_cookies([{"name": cookie_imp.split("=")[0], "value": cookie_imp.split("=", 1)[1], "url": BASE}])
+        enviados = []
+        pg7.on("request", lambda r: enviados.append(r.url) if "/convidados/importar" in r.url else None)
+        pg7.goto(f"{BASE}/gestao/{SLUG_IMPORTAR}")
+        pg7.wait_for_selector("li.cartao")
+        pg7.click("text=Importar ficheiro")
+        with pg7.expect_download() as descarga:
+            pg7.click("text=Descarregar modelo")
+        R.ok("«Descarregar modelo» descarrega modelo-convidados.csv, em UTF-8 com BOM (CA-GES-18)",
+             descarga.value.suggested_filename == "modelo-convidados.csv"
+             and Path(descarga.value.path()).read_bytes().startswith("\ufeffNome no convite;Pessoas;".encode()))
+        pg7.set_input_files("input[type=file]", files=[{"name": "convidados.xlsx", "buffer": b"PK\x03\x04" + bytes(60),
+                                                        "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}])
+        pg7.wait_for_selector(".j .erro")
+        xlsx = pg7.inner_text(".j .erro")
+        pg7.set_input_files("input[type=file]", files=[{"name": "grande.csv", "mimeType": "text/csv", "buffer": b"Nome\n" + b"x" * 600_000}])
+        pg7.wait_for_selector(".j .erro >> text=500 KB")
+        R.ok("um .xlsx ou um ficheiro grande demais: mensagem clara, sem enviar nada (CA-GES-19)",
+             "«CSV UTF-8 (delimitado por vírgulas)»" in xlsx and pg7.inner_text(".j .erro").startswith("O ficheiro tem 601 KB") and not enviados, xlsx)
+        # CSV gravado por um Excel antigo, em Windows-1252
+        ficheiro = ("Nome no convite;Pessoas;Telefone (WhatsApp);Grupo\r\n"
+                    "Família Gonçalves Exemplo;3;900 000 151;Colegas de trabalho\r\n"
+                    ";2;;\r\n"
+                    "Avó Rosa;1;;\r\n").encode("cp1252")
+        pg7.set_input_files("input[type=file]", files=[{"name": "convidados.csv", "mimeType": "text/csv", "buffer": ficheiro}])
+        pg7.wait_for_selector(".previa")
+        previa = pg7.inner_text(".previa")
+        R.ok("ficheiro em Windows-1252: acentos certos e pré-visualização com as prontas, os erros e os repetidos (CA-GES-18, CA-GES-19)",
+             "1 de 3 linhas prontas a importar." in previa and "Família Gonçalves Exemplo · 3 pessoas · +244 900 000 151 · Colegas de trabalho" in previa
+             and "Linha 3 («; 2»): Falta o nome." in previa and "Linha 4 («Avó Rosa; 1»): Já está na lista." in previa, previa)
+        if capturas:
+            pg7.screenshot(path=str(CAPTURAS / "06-importar-ficheiro.png"))
+        pg7.click("text=Importar 1 convidado")
+        pg7.wait_for_selector("li.cartao:has-text('Família Gonçalves Exemplo')")
+        R.ok("«Importar 1 convidado»: aparece na lista e o aviso diz quantos foram importados, sem erros na consola (CA-GES-18)",
+             "1 convidado importado." in pg7.inner_text(".aviso") and pg7.locator("li.cartao").count() == 7 and not erros7, "; ".join(erros7[:2]))
+        ctx7.close()
+
+        ctx8, pg8, _ = pagina(b, 320, 640)
+        ctx8.add_cookies([{"name": cookie_imp.split("=")[0], "value": cookie_imp.split("=", 1)[1], "url": BASE}])
+        pg8.goto(f"{BASE}/gestao/{SLUG_IMPORTAR}")
+        pg8.wait_for_selector("li.cartao")
+        pg8.click("text=Importar ficheiro")
+        pg8.set_input_files("input[type=file]", files=[{"name": "convidados.csv", "mimeType": "text/csv", "buffer": ficheiro}])
+        pg8.wait_for_selector(".previa")
+        fora = pg8.evaluate("[...document.querySelectorAll('.j *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.right>innerWidth+1}).length")
+        R.ok("320 px: janela de importação sem transbordo horizontal (CA-GES-14)", fora == 0, f"fora={fora}")
+        ctx8.close()
         ctx.close()
         b.close()
 
