@@ -33,7 +33,7 @@ Actualizado em Novembro de 2026. A pedido do primeiro cliente real, a **zona de 
 
 Próximos passos sugeridos:
 
-1. **Pôr no ar no cPanel**: certificado TLS válido e primeira publicação, como em `apps/web/README.md`.
+1. **Pôr no ar no cPanel**: feito a 6 de Novembro de 2026. A operação está na skill `.claude/skills/celebramos/`.
 2. Publicação automática por SSH a partir do CI (E0-S3).
 3. E3 (back-office, para não editar JSON à mão).
 4. E1-S2 (textos no servidor).
