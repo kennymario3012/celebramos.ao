@@ -6,7 +6,7 @@ Este ficheiro é para agentes de código (Claude Code, Codex, Cursor, …) e par
 
 **celebramos.ao** é uma plataforma de convites digitais para Angola. O convidado recebe um link pelo WhatsApp, abre um envelope animado e percorre o convite no telemóvel. Pode confirmar a presença no próprio convite (e avisar a família pelo WhatsApp), abrir o local no mapa e guardar a data no calendário. O primeiro tipo de evento são as festas de 15 anos. A seguir vêm casamentos, aniversários e outros.
 
-Estado actual: **especificação e protótipo de referência**, validados com um cliente real. A **primeira parte da plataforma** já existe em `apps/web`: o convite servido com links pessoais e a **zona de gestão de convidados** para a família, com acesso por PIN ([decisão 0001](docs/decisoes/0001-gestao-de-convidados-pela-familia.md)). No link pessoal, o convidado responde dentro do convite ([decisão 0003](docs/decisoes/0003-confirmacao-dentro-do-convite.md)). O resto da plataforma está por construir segundo `docs/` (ver «Estado» no `docs/08`).
+Estado actual: **especificação e protótipo de referência**, validados com um cliente real. A **primeira parte da plataforma** já existe em `apps/web`: o convite servido com links pessoais e a **zona de gestão de convidados** para a família, com acesso por PIN ([decisão 0001](docs/decisoes/0001-gestao-de-convidados-pela-familia.md)). No link pessoal, o convidado responde dentro do convite ([decisão 0003](docs/decisoes/0003-confirmacao-dentro-do-convite.md)). Está em produção em `https://celebramos.ao` desde 6 de Novembro de 2026. O resto da plataforma está por construir segundo `docs/` (ver «Estado» no `docs/08`).
 
 ## Leitura obrigatória antes de qualquer tarefa
 
@@ -91,6 +91,15 @@ A plataforma fica alojada no **cPanel** do titular ([decisão 0002](docs/decisoe
 
 Eventos reais preparam-se com `node scripts/preparar-evento.mjs <config.json>`. O resultado vai para `apps/web/eventos-privados/`, que o git ignora, e **nunca** entra no repositório.
 
+A **operação em produção** está na skill [`.claude/skills/celebramos/`](.claude/skills/celebramos/SKILL.md):
+- publicar uma versão no cPanel e voltar atrás;
+- publicar o evento de um cliente e trocar o PIN;
+- o servidor (HTTPS, cache, cron, lentidão);
+- os manuais para as famílias;
+- o que já foi feito.
+
+O Claude Code carrega-a sozinho. Os outros agentes lêem o `SKILL.md` e a referência da tarefa.
+
 ## Estrutura do repositório
 
 ```
@@ -100,6 +109,7 @@ THIRD_PARTY_NOTICES.md       licenças de terceiros
 docs/                        especificação (01–08), decisões, esquema JSON, capturas de referência
 prototipo/                   implementação de referência, testes de aceitação e pipeline de arte
 apps/web/                    plataforma (Next.js): convite com links pessoais e zona de gestão de convidados
+.claude/skills/celebramos/   operação: publicar no cPanel, eventos reais, servidor, manuais
 .github/workflows/           CI
 ```
 
