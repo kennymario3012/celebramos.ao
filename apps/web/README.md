@@ -2,7 +2,7 @@
 
 Aplicação Next.js com duas coisas:
 
-1. **O convite servido pela plataforma**, com links pessoais `/c/{slug}/{token}`. O convidado é resolvido no servidor e o HTML só leva esse convidado. No link pessoal, o convidado responde no próprio convite (vou ou não vou, pessoas, mensagem), e o WhatsApp abre no mesmo toque com a mensagem para a família ([decisão 0003](../../docs/decisoes/0003-confirmacao-dentro-do-convite.md)). O link geral é `/c/{slug}`, só com o WhatsApp.
+1. **O convite servido pela plataforma**, com links pessoais `/c/{slug}/{token}`. O convidado é resolvido no servidor e o HTML só leva esse convidado. No link pessoal, o convidado responde no próprio convite (vou ou não vou, pessoas, mensagem) e, depois de gravar, pode avisar a família pelo WhatsApp com a mensagem já escrita ([decisão 0003](../../docs/decisoes/0003-confirmacao-dentro-do-convite.md)). O link geral é `/c/{slug}`, só com o WhatsApp.
 2. **A zona de gestão de convidados** `/gestao/{slug}`, onde a família entra com um PIN e trata dos convidados:
    - cadastrar, um a um ou colando uma lista;
    - enviar cada link pelo WhatsApp;
@@ -29,7 +29,7 @@ Em desenvolvimento, sem `CELEBRAMOS_DADOS`, os dados ficam em `.dados-locais/` (
 
 ```bash
 npm run pacote                    # next build + pacote do cPanel em dist/celebramos-web
-python3 testes/e2e.py             # 70 verificações contra o pacote, a correr em 2 processos com os mesmos dados
+python3 testes/e2e.py             # 72 verificações contra o pacote, a correr em 2 processos com os mesmos dados
 python3 testes/e2e.py --capturas  # + capturas em testes/_capturas/
 ```
 

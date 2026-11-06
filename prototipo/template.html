@@ -128,6 +128,10 @@ html[data-convite-aberto] [data-abertura]{display:none}
 .resumo-rot{font-size:clamp(.85rem,4cqi,1rem);letter-spacing:.16em;color:var(--muted)}
 .resumo-val{font-size:clamp(1.2rem,6cqi,1.6rem);font-weight:700;letter-spacing:.04em;color:var(--ink)}
 .resp-estado:empty{display:none}
+#resp-enviar{margin-top:.5rem}
+.btn-pill[data-avisar]{padding-inline:1.5rem;font-size:.95rem;line-height:1.35}
+.btn-pill[data-avisar] span{text-wrap:balance}
+.btn:disabled{opacity:.6;cursor:default}
 
 /* convite */
 .mono-xl{font-size:clamp(4.5rem,22cqi,6rem)}
@@ -580,7 +584,7 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
   }
   function mensagemConfirmacao(estado, pessoas, extra) {
     var modelo = estado === "recusado"
-      ? C.confirmacao.mensagemRecusa || "Olá! Lamento, mas não será possível estar presente no dia {dataCurta}.\nConvidado: {convidado}"
+      ? C.confirmacao.mensagemRecusa || "Olá! Eu, {convidado}, infelizmente não vou poder estar presente no dia {dataCurta}. Agradeço muito o convite e desejo uma festa muito bonita!"
       : C.confirmacao.mensagem;
     return preencher(modelo, {
       debutante: C.debutante, homenageado: C.debutante, dataCurta: d.dia + " de " + MESES[d.mes - 1],
@@ -589,10 +593,18 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
     }) + (extra ? "\n\n" + extra : "");
   }
   var rsvp = $("#rsvp"), boxR = $("#resposta");
-  function montarConfirmacao() {
+  /* botões do WhatsApp: os da configuração (redondos) ou, depois de responder no convite, «Avisar a família» (em pílula) */
+  function desenharBotoes(avisar, estado, pessoas, extra) {
+    var msg = mensagemConfirmacao(estado, pessoas, extra);
     rsvp.innerHTML = C.confirmacao.botoes.map(function (b, i) {
-      return '<a class="btn btn-round" data-rsvp="' + i + '" href="#">' + icon("brand-whatsapp:34") + "<span>" + esc(b.rotulo) + "</span></a>";
+      var tel = String(b.telefone || "").replace(/\D/g, ""), href = tel ? "https://wa.me/" + tel + "?text=" + encodeURIComponent(msg) : "#";
+      var m = /\(([^)]*)\)\s*$/.exec(b.rotulo); /* «Confirmar presença (mãe)» → «Avisar pelo WhatsApp (mãe)» */
+      var rotulo = !avisar ? b.rotulo : m ? "Avisar pelo WhatsApp (" + m[1] + ")" : "Avisar a família pelo WhatsApp";
+      return '<a class="btn ' + (avisar ? "btn-pill" : "btn-round") + '" data-rsvp="' + i + '"' + (avisar ? " data-avisar" : "") + ' href="' + href + '"' +
+        (tel ? ' target="_blank" rel="noopener noreferrer"' : "") + ">" + icon("brand-whatsapp:" + (avisar ? 28 : 34)) + "<span>" + esc(rotulo) + "</span></a>";
     }).join("");
+  }
+  function montarConfirmacao() {
     var R = C.responder, actual = convidado && convidado.resposta, limite = (convidado && convidado.pessoas) || 1;
     resp.modo = !R || !convidado ? "" : R.fechado ? "fechado" : actual ? "resumo" : "formulario";
     resp.estado = actual ? actual.estado : "confirmado";
@@ -601,27 +613,13 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
     resp.registada = false;
     desenharResposta();
   }
-  /* o WhatsApp abre no mesmo toque: o link leva sempre a mensagem do que está escolhido */
-  function actualizarBotoes() {
-    var form = resp.modo === "formulario", estado = form ? resp.estado : "confirmado";
-    var pessoas = form ? (estado === "confirmado" ? resp.pessoas : 0) : convidado && convidado.pessoas;
-    var msg = mensagemConfirmacao(estado, pessoas, form ? limpar(resp.mensagem) : "");
-    $$("[data-rsvp]", rsvp).forEach(function (a) {
-      var b = C.confirmacao.botoes[+a.getAttribute("data-rsvp")], tel = String(b.telefone || "").replace(/\D/g, "");
-      a.setAttribute("href", tel ? "https://wa.me/" + tel + "?text=" + encodeURIComponent(msg) : "#");
-      if (tel) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
-      var m = /\(([^)]*)\)\s*$/.exec(b.rotulo); /* «Confirmar presença (mãe)» → «Enviar resposta (mãe)» */
-      a.lastChild.textContent = estado === "recusado" ? "Enviar resposta" + (m ? " (" + m[1] + ")" : "") : b.rotulo;
-    });
-  }
   rsvp.addEventListener("click", function (e) {
     var a = e.target.closest ? e.target.closest("[data-rsvp]") : null;
     if (!a) return;
-    var semNumero = a.getAttribute("href") === "#";
-    if (semNumero || resp.aEnviar) e.preventDefault();
-    if (resp.modo === "formulario") { if (!resp.aEnviar) enviarResposta(semNumero); }
-    else if (semNumero) aviso("Pré-visualização: o número de WhatsApp para a confirmação será configurado na versão final.");
-    else registar("confirmar");
+    if (a.getAttribute("href") === "#") {
+      e.preventDefault();
+      aviso("Pré-visualização: o número de WhatsApp para a confirmação será configurado na versão final.");
+    } else if (!a.hasAttribute("data-avisar")) registar("confirmar");
   });
 
   /* ---------- confirmação dentro do convite (plataforma, link pessoal: C.responder) ---------- */
@@ -639,7 +637,7 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
   function desenharResposta() {
     var modo = resp.modo, actual = convidado && convidado.resposta;
     boxR.hidden = !modo;
-    rsvp.hidden = modo === "resumo";
+    rsvp.hidden = modo === "formulario";
     /* mais conteúdo: menos espaço entre blocos e o fim afastado do canto de baixo (decoração) */
     boxR.parentNode.style.gap = modo ? "1.25rem" : "2rem";
     boxR.parentNode.style.paddingBottom = modo ? "10rem" : "";
@@ -651,21 +649,28 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
           '<button type="button" data-q="1" aria-label="Mais uma pessoa">+</button></div></div>' : "") +
         '<button type="button" class="link-sub" id="resp-escrever">Escrever uma mensagem à família</button>' +
         '<textarea id="resp-msg" rows="2" maxlength="300" aria-label="Mensagem para a família (opcional)" placeholder="Mensagem para a família (opcional)"></textarea>' +
+        '<button type="button" class="btn btn-round" id="resp-enviar">' + icon("check:34:2") + "<span></span></button>" +
         '<p class="nota body resp-estado" id="resp-estado" role="status"></p>';
       var ta = $("#resp-msg");
       ta.value = resp.mensagem; ta.hidden = !resp.mensagem; $("#resp-escrever").hidden = !!resp.mensagem;
       actualizarQtd();
-    } else if (modo) {
+      rsvp.innerHTML = "";
+      return;
+    }
+    if (modo) {
       boxR.innerHTML = (actual ? '<div class="resumo"><p class="caps resumo-rot">' + (resp.registada ? "Resposta registada" : "A sua resposta") +
           '</p><p class="caps resumo-val">' + esc(textoResposta(actual)) + "</p>" +
           (modo === "resumo" ? '<button type="button" class="link-sub" id="resp-alterar">Alterar resposta</button>' : "") + "</div>" : "") +
         (modo === "fechado" ? '<p class="nota body">O prazo para responder no convite terminou. ' + (actual ? "Para mudar a resposta" : "Para responder") +
           ", fale com a família pelo WhatsApp.</p>" : "");
     } else boxR.innerHTML = "";
-    actualizarBotoes();
+    if (modo === "resumo") desenharBotoes(true, actual.estado, actual.pessoas, actual.mensagem || "");
+    else desenharBotoes(false, "confirmado", convidado && convidado.pessoas, "");
   }
+  /* contador de pessoas e rótulo do botão de gravar, conforme a escolha */
   function actualizarQtd() {
-    var q = $("#resp-qtd");
+    var q = $("#resp-qtd"), b = $("#resp-enviar");
+    if (b) b.lastChild.textContent = resp.estado === "recusado" ? "Enviar resposta" : C.confirmacao.botoes[0].rotulo.replace(/\s*\([^)]*\)\s*$/, "");
     if (!q) return;
     q.hidden = resp.estado !== "confirmado";
     $("#resp-n").textContent = resp.pessoas;
@@ -673,46 +678,53 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
     $('[data-q="1"]', q).disabled = resp.pessoas >= convidado.pessoas;
   }
   boxR.addEventListener("change", function (e) {
-    if (e.target.name !== "resp-estado") return;
-    resp.estado = e.target.value; actualizarQtd(); actualizarBotoes();
+    if (e.target.name === "resp-estado") { resp.estado = e.target.value; actualizarQtd(); }
   });
   boxR.addEventListener("input", function (e) {
-    if (e.target.id === "resp-msg") { resp.mensagem = e.target.value; actualizarBotoes(); }
+    if (e.target.id === "resp-msg") resp.mensagem = e.target.value;
   });
   boxR.addEventListener("click", function (e) {
     var t = e.target.closest ? e.target.closest("button") : null;
     if (!t) return;
     if (t.hasAttribute("data-q")) {
       resp.pessoas = Math.max(1, Math.min(convidado.pessoas, resp.pessoas + Number(t.getAttribute("data-q"))));
-      actualizarQtd(); actualizarBotoes();
+      actualizarQtd();
     } else if (t.id === "resp-escrever") {
       t.hidden = true; var ta = $("#resp-msg"); ta.hidden = false; ta.focus();
+    } else if (t.id === "resp-enviar") {
+      if (!resp.aEnviar) enviarResposta();
     } else if (t.id === "resp-alterar") {
       resp.modo = "formulario"; resp.registada = false; desenharResposta();
       var r = $("input:checked", boxR); if (r) r.focus();
     }
   });
-  /* grava a resposta enquanto o WhatsApp abre (o link segue o seu caminho); sem rede, o aviso pelo WhatsApp chega na mesma */
-  function enviarResposta(semNumero) {
-    var corpo = { estado: resp.estado }, m = limpar(resp.mensagem), estado = $("#resp-estado");
+  /* grava a resposta; a seguir, o convite oferece «Avisar a família pelo WhatsApp», com a mensagem já escrita */
+  function enviarResposta() {
+    var corpo = { estado: resp.estado }, m = limpar(resp.mensagem), estado = $("#resp-estado"), botao = $("#resp-enviar");
     if (resp.estado === "confirmado") corpo.pessoas = resp.pessoas;
     if (m) corpo.mensagem = m;
-    if (!C.responder.caminho) { aviso("Pré-visualização: a resposta não fica gravada."); return; }
-    resp.aEnviar = true;
+    function registada(gravada) {
+      convidado.resposta = corpo;
+      resp.modo = "resumo"; resp.registada = gravada; desenharResposta();
+      var a = $("[data-rsvp]", rsvp); if (a && a.focus) a.focus({ preventScroll: true });
+    }
+    if (!C.responder.caminho) { registada(false); aviso("Pré-visualização: a resposta não fica gravada."); return; }
+    resp.aEnviar = botao.disabled = true;
     estado.textContent = "A registar a resposta…";
-    fetch(C.responder.caminho, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo), keepalive: true })
+    fetch(C.responder.caminho, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) })
       .then(function (r) {
         resp.aEnviar = false;
         if (r.status === 410) { C.responder.fechado = true; resp.modo = "fechado"; desenharResposta(); return; }
         if (!r.ok) throw new Error("HTTP " + r.status);
-        convidado.resposta = { estado: corpo.estado, pessoas: corpo.pessoas, mensagem: corpo.mensagem };
-        resp.modo = "resumo"; resp.registada = true; desenharResposta();
+        registada(true);
         aviso("Resposta registada.");
       })
       .catch(function () {
-        resp.aEnviar = false;
-        estado.textContent = "Não foi possível registar a resposta no convite. " +
-          (semNumero ? "Tente outra vez." : "Envie a mensagem do WhatsApp à família, ou tente outra vez.");
+        /* sem registo no convite, o convidado avisa na mesma a família pelo WhatsApp */
+        resp.aEnviar = botao.disabled = false;
+        estado.textContent = "Não foi possível registar a resposta no convite. Tente outra vez, ou avise a família pelo WhatsApp.";
+        desenharBotoes(true, corpo.estado, corpo.pessoas, corpo.mensagem || "");
+        rsvp.hidden = false;
       });
   }
 

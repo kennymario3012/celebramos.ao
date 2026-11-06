@@ -62,7 +62,7 @@ Exemplos completos: [`prototipo/configs/exemplo-bela-principe.json`](../prototip
 | `confirmacao.nota` | texto | sim | Nota por baixo dos botões. |
 | `confirmacao.botoes[]` | 1–2 × `{rotulo, telefone}` | sim | Um botão por número de WhatsApp. `telefone` em formato internacional sem `+` (ex.: `2449XXXXXXXX`). Vazio: modo de pré-visualização (aviso em vez de link). |
 | `confirmacao.mensagem` | modelo | sim | Mensagem pré-escrita (§3). |
-| `confirmacao.mensagemRecusa` | modelo | não | *Plataforma:* mensagem quando o convidado responde no convite que não vai (§3). Por omissão: «Olá! Lamento, mas não será possível estar presente no dia {dataCurta}.\nConvidado: {convidado}». |
+| `confirmacao.mensagemRecusa` | modelo | não | *Plataforma:* mensagem quando o convidado responde no convite que não vai (§3). Por omissão: «Olá! Eu, {convidado}, infelizmente não vou poder estar presente no dia {dataCurta}. Agradeço muito o convite e desejo uma festa muito bonita!». |
 | `textos.confirmarLead` | texto | não | Frase antes do prazo. Por omissão: «Por favor, confirme a sua presença até». |
 | `textos.contagem` | texto | não | Texto da contagem regressiva. Por omissão: «para o grande dia». |
 
@@ -119,9 +119,9 @@ Modelo com marcadores, substituídos **em todas as ocorrências**:
 | `{convidado}` | Nome do convidado. No link geral: «[o seu nome]» |
 | `{pessoas}` | « (3 pessoas)» / « (1 pessoa)»: o número do convite ou, na resposta dentro do convite, as pessoas escolhidas. Vazio se não houver número |
 
-Modelo actual: `Olá! Confirmo a presença na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}{pessoas}`.
-Modelo de recusa (`mensagemRecusa`, plataforma): `Olá! Lamento, mas não será possível estar presente na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}`.
-Na resposta dentro do convite, a mensagem que o convidado escreveu vai no fim, depois de uma linha em branco.
+Modelo actual (escolhido pelo titular, [decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)): `Olá! Eu, {convidado}, confirmo a minha presença{pessoas} na festa de 15 anos da {debutante}, no dia {dataCurta}.`
+Modelo de recusa (`mensagemRecusa`, plataforma): `Olá! Eu, {convidado}, infelizmente não vou poder estar presente na festa de 15 anos da {debutante}, no dia {dataCurta}. Agradeço muito o convite e desejo uma festa muito bonita!`
+Na resposta dentro do convite, estas mensagens vão no botão «Avisar a família pelo WhatsApp», e a mensagem que o convidado escreveu vai no fim, depois de uma linha em branco.
 Link gerado: `https://wa.me/<telefone>?text=<mensagem codificada com encodeURIComponent>`.
 
 ## 4. Campos derivados

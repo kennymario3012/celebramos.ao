@@ -52,7 +52,7 @@ Decisões tomadas: [`decisoes/`](decisoes/). A primeira é a [0001 · Gestão de
 | **Tokens** | Variáveis CSS do tema (`--bg`, `--accent`…). |
 | **Decoração** | As imagens florais de cada secção (cantos e grinaldas) e a sua posição. |
 | **Harmonia** | As regras que evitam cortes e excessos nas fronteiras entre secções. |
-| **Confirmação** | O convidado diz se vai e quantas pessoas vão. No link pessoal, responde dentro do convite e o WhatsApp abre com a mensagem para a família; no link geral, é só pelo WhatsApp, com uma mensagem pré-escrita. |
+| **Confirmação** | O convidado diz se vai e quantas pessoas vão. No link pessoal, responde dentro do convite e pode avisar a família pelo WhatsApp; no link geral, é só pelo WhatsApp, com uma mensagem pré-escrita. |
 | **Resposta no convite** | A resposta dada pelo convidado no próprio convite (vou ou não vou, pessoas, mensagem). Fica gravada e aparece na zona de gestão. |
 | **Intenção de confirmação** | O registo de que o convidado tocou em «Confirmar presença» quando os botões só abrem o WhatsApp. |
 | **Versão** | Uma fotografia imutável da configuração, criada a cada publicação. |

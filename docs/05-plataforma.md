@@ -161,18 +161,19 @@ Ainda não implementado: importar ficheiros CSV ou Excel, contactos do telemóve
 
 ## Confirmações
 
-**Decisão actual ([0003](decisoes/0003-confirmacao-dentro-do-convite.md), implementada em `apps/web`):** no link pessoal, o convidado responde **dentro do convite**, e o WhatsApp abre no mesmo toque com a mensagem para a família. O WhatsApp continua no caminho porque é o canal preferido das famílias. Quem envia o aviso é sempre o convidado: o envio automático em nome da família exige a WhatsApp Business API ([01](01-produto.md#fora-para-já)).
+**Decisão actual ([0003](decisoes/0003-confirmacao-dentro-do-convite.md), implementada em `apps/web`):** no link pessoal, o convidado responde **dentro do convite** e, depois de gravar, pode avisar a família pelo WhatsApp, com a mensagem já escrita. O WhatsApp continua no caminho porque é o canal preferido das famílias. Quem envia o aviso é sempre o convidado: o envio automático em nome da família exige a WhatsApp Business API ([01](01-produto.md#fora-para-já)).
 
 - **Link pessoal, até ao prazo:**
   - O convidado escolhe vou ou não vou («vamos» ou «não vamos» num convite para várias pessoas), quantas pessoas vão (de 1 até ao número do convite; por omissão, todas) e, se quiser, escreve uma mensagem para a família (até 300 caracteres). O que aparece no ecrã está no [02 §4.3](02-experiencia-do-convite.md#43-confirmação-de-presença).
-  - O botão redondo envia. Abre `wa.me` com a mensagem do que está escolhido (a de confirmação, com as pessoas, ou a de recusa, seguida da mensagem do convidado) e, no mesmo toque, grava a resposta com `fetch` (`keepalive`). Se a gravação falhar, o WhatsApp abre na mesma, e o convite pede ao convidado que envie a mensagem.
+  - O botão redondo grava a resposta (`fetch`), sem abrir o WhatsApp. Depois de gravar, o convite mostra «Avisar a família pelo WhatsApp», que abre `wa.me` com a mensagem da resposta registada: a de confirmação, com as pessoas, ou a de recusa, seguida da mensagem do convidado ([04 §3](04-modelo-de-dados.md#3-mensagem-de-confirmação)).
+  - Se a gravação falhar, o convite diz que não registou e mostra logo o botão do WhatsApp, com a resposta escolhida, para o convidado avisar a família na mesma.
   - A resposta muda o estado do convidado: **confirmado**, com as pessoas, ou **recusado**. Fica guardada com a data e a mensagem, e aparece logo na zona de gestão.
-  - Ao reabrir o link, o convite mostra a resposta registada (também a que a família marcou) e «Alterar resposta».
+  - Ao reabrir o link, o convite mostra a resposta registada (também a que a família marcou), «Alterar resposta» e «Avisar a família pelo WhatsApp».
 - **Link pessoal, depois do prazo:** o formulário fecha.
   - O prazo é o fim do dia de `confirmacao.ate` («1 de Maio de 2027») em Luanda. Se o texto não for uma data por extenso, ou for depois da festa, o prazo é o início da festa.
   - O convite mostra a resposta registada, se houver, e os botões do WhatsApp, que registam o toque (`confirmar`) como antes. O servidor responde 410.
 - **Link geral e protótipo:** só o WhatsApp, como antes. Os botões apontam **directamente** para `wa.me`, para funcionar mesmo se a plataforma falhar e sem pedidos extra em redes lentas. No link geral, `{convidado}` passa a «[o seu nome]» e a família marca a resposta à mão.
-- **Pré-visualização** («Ver convite» na zona de gestão): mostra o formulário, mas não grava.
+- **Pré-visualização** («Ver convite» na zona de gestão): mostra o formulário e o botão «Avisar», mas não grava.
 - **Na zona de gestão**, a família vê «Respondeu no convite», a data e a mensagem. A resposta conta no resumo, nos filtros e na exportação. A família pode corrigi-la, e o cartão mostra o que o convidado respondeu.
 
 ### Painel do anfitrião

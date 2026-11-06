@@ -90,7 +90,7 @@
           }
         },
         "mensagem": { "type": "string", "maxLength": 500, "description": "Modelo da mensagem de WhatsApp. Marcadores: {debutante} (ou {homenageado}), {dataCurta}, {convidado}, {pessoas}." },
-        "mensagemRecusa": { "type": "string", "maxLength": 500, "description": "PLATAFORMA (confirmação dentro do convite): modelo da mensagem de WhatsApp quando o convidado responde que não vai. Mesmos marcadores. Por omissão: «Olá! Lamento, mas não será possível estar presente no dia {dataCurta}.\nConvidado: {convidado}»." }
+        "mensagemRecusa": { "type": "string", "maxLength": 500, "description": "PLATAFORMA (confirmação dentro do convite): modelo da mensagem de WhatsApp quando o convidado responde que não vai. Mesmos marcadores. Por omissão: «Olá! Eu, {convidado}, infelizmente não vou poder estar presente no dia {dataCurta}. Agradeço muito o convite e desejo uma festa muito bonita!»." }
       }
     },
     "textos": {

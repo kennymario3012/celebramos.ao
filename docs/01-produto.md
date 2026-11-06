@@ -27,7 +27,7 @@ Para o anfitrião, o convite tem de ser **bonito, rápido de aprovar e fácil de
 1. **Momento de abertura:** o envelope com selo de cera dá ao convite digital o ritual do convite de papel.
 2. **Tudo no telemóvel, num só link:** data, locais com Google Maps e Waze, programa, regras de traje, lista de presentes, contagem regressiva e calendário.
 3. **Pessoal:** cada convidado vê o seu nome no envelope e no convite, e para quantas pessoas é válido.
-4. **Confirmação sem atrito:** um toque grava a resposta e abre o WhatsApp com a mensagem já escrita para a família.
+4. **Confirmação sem atrito:** um toque grava a resposta, e outro abre o WhatsApp com a mensagem já escrita para a família.
 5. **Feito à medida, com rapidez:** temas e secções configuráveis. A família aprova num link de pré-visualização.
 
 ## Modelo de serviço

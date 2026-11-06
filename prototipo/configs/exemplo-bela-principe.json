@@ -110,8 +110,8 @@
         "telefone": ""
       }
     ],
-    "mensagem": "Olá! Confirmo a presença na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}{pessoas}",
-    "mensagemRecusa": "Olá! Lamento, mas não será possível estar presente na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}"
+    "mensagem": "Olá! Eu, {convidado}, confirmo a minha presença{pessoas} na festa de 15 anos da {debutante}, no dia {dataCurta}.",
+    "mensagemRecusa": "Olá! Eu, {convidado}, infelizmente não vou poder estar presente na festa de 15 anos da {debutante}, no dia {dataCurta}. Agradeço muito o convite e desejo uma festa muito bonita!"
   },
   "textos": {
     "confirmarLead": "Por favor, confirme a sua presença no baile até",

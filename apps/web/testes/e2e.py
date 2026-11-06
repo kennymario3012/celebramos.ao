@@ -387,37 +387,39 @@ def correr(R, capturas):
         pg2.click("#envelope")
         pg2.wait_for_timeout(2700)
         R.ok("convite pessoal: «válido para 3 pessoas» (CA-PER-02)", "3 pessoas" in pg2.inner_text('[data-g="valido"]'))
-        rsvp = pg2.get_attribute("[data-rsvp='0']", "href")
-        R.ok("convite pessoal: confirmação com nome e pessoas (CA-RSVP-02/03)", rsvp.startswith(f"https://wa.me/{TEL_FAMILIA}?text=") and "Sr. Carlos Neto e Família (3 pessoas)" in urllib.parse.unquote(rsvp))
-
-        # o convidado responde no convite: vamos 2 (de 3), com mensagem; grava e abre o WhatsApp no mesmo toque
+        # o convidado responde no convite: vamos 2 (de 3), com mensagem; gravar não abre o WhatsApp
         pg2.evaluate("document.querySelector('[data-seccao=confirmacao]').scrollIntoView()")
-        R.ok("formulário no link pessoal: «Vamos» e as 3 pessoas do convite por omissão (CA-RSVP-06)",
-             pg2.is_checked("input[value=confirmado]") and pg2.inner_text("#resp-n") == "3")
+        R.ok("formulário no link pessoal: «Vamos», as 3 pessoas do convite por omissão e o botão de gravar, sem WhatsApp (CA-RSVP-06)",
+             pg2.is_checked("input[value=confirmado]") and pg2.inner_text("#resp-n") == "3"
+             and pg2.inner_text("#resp-enviar").strip().upper() == "CONFIRMAR PRESENÇA" and pg2.locator("[data-rsvp]").count() == 0)
         pg2.click("label:has(input[value=recusado])")
-        recusa = urllib.parse.unquote(pg2.get_attribute("[data-rsvp='0']", "href"))
-        R.ok("«Não vamos»: sem pessoas, botão «Enviar resposta» e mensagem de recusa",
-             not pg2.is_visible("#resp-qtd") and pg2.inner_text("[data-rsvp='0']").strip().upper() == "ENVIAR RESPOSTA"
-             and "Lamento" in recusa and "Sr. Carlos Neto e Família" in recusa and "pessoas" not in recusa)
+        R.ok("«Não vamos»: sem pessoas e com o botão «Enviar resposta»",
+             not pg2.is_visible("#resp-qtd") and pg2.inner_text("#resp-enviar").strip().upper() == "ENVIAR RESPOSTA")
         pg2.click("label:has(input[value=confirmado])")
         pg2.click("button[aria-label='Menos uma pessoa']")
         pg2.click("#resp-escrever")
         pg2.fill("#resp-msg", "Parabéns, Beatriz!")
         if capturas:
             pg2.locator("[data-seccao=confirmacao]").screenshot(path=str(CAPTURAS / "12-convite-resposta.png"))
-        with ctx2.expect_page() as nova:
-            pg2.click("[data-rsvp='0']")
-        whatsapp = urllib.parse.unquote(nova.value.url)
-        nova.value.close()
+        separadores = len(ctx2.pages)
+        pg2.click("#resp-enviar")
         pg2.wait_for_selector("#resposta .resumo-rot:has-text('Resposta registada')")
         c_api = next(c for c in json.loads(pedido(f"/api/gestao/{SLUG}/dados", cookie=cookie)[2])["convidados"] if c["token"] == carlos["token"])
         R.ok("resposta no convite gravada: vem com 2 pessoas, com a mensagem e a data (CA-RSVP-06)",
              c_api["estado"] == "confirmado" and c_api.get("pessoasConfirmadas") == 2 and c_api.get("resposta", {}).get("mensagem") == "Parabéns, Beatriz!"
              and c_api["resposta"].get("em"), json.dumps(c_api.get("resposta")))
-        R.ok("o WhatsApp abre no mesmo toque, com as 2 pessoas e a mensagem (CA-RSVP-06)",
-             whatsapp.startswith(f"https://wa.me/{TEL_FAMILIA}?text=") and "Sr. Carlos Neto e Família (2 pessoas)" in whatsapp and "Parabéns, Beatriz!" in whatsapp, whatsapp[:120])
+        R.ok("gravar a resposta não abre o WhatsApp sozinho", len(ctx2.pages) == separadores)
+        avisar = urllib.parse.unquote(pg2.get_attribute("[data-rsvp='0']", "href"))
+        R.ok("depois de gravar, «Avisar a família pelo WhatsApp» com o nome, as 2 pessoas e a mensagem (CA-RSVP-02/03, CA-RSVP-06)",
+             pg2.inner_text("[data-rsvp='0']").strip().upper() == "AVISAR A FAMÍLIA PELO WHATSAPP" and avisar.startswith(f"https://wa.me/{TEL_FAMILIA}?text=")
+             and "Olá! Eu, Sr. Carlos Neto e Família, confirmo a minha presença (2 pessoas) na festa de 15 anos da Beatriz, no dia 15 de Maio." in avisar
+             and avisar.endswith("\n\nParabéns, Beatriz!"), avisar[:160])
         if capturas:
             pg2.locator("[data-seccao=confirmacao]").screenshot(path=str(CAPTURAS / "13-convite-resposta-registada.png"))
+        with ctx2.expect_page() as nova:
+            pg2.click("[data-rsvp='0']")
+        R.ok("«Avisar a família pelo WhatsApp» abre o WhatsApp num separador novo", nova.value.url.startswith(f"https://wa.me/{TEL_FAMILIA}?text="))
+        nova.value.close()
 
         pg.reload()
         pg.wait_for_selector("li.cartao:has-text('Sr. Carlos Neto e Família') >> text=/Abriu \\d/")
@@ -432,15 +434,14 @@ def correr(R, capturas):
         pg3.goto(tia["link"] + "?previa=1")
         pg3.click("#envelope")
         pg3.wait_for_timeout(2700)
-        with ctx3.expect_page() as nova:
-            pg3.click("[data-rsvp='0']")
-        nova.value.close()
-        pg3.wait_for_timeout(500)
+        pg3.click("#resp-enviar")
+        pg3.wait_for_timeout(300)
         aviso_previa = pg3.inner_text("#aviso")
+        avisar_previa = pg3.is_visible("[data-rsvp='0']")
         ctx3.close()
         c_api = next(c for c in json.loads(pedido(f"/api/gestao/{SLUG}/dados", cookie=cookie)[2])["convidados"] if c["token"] == tia["token"])
-        R.ok("pré-visualização: o formulário aparece, mas a resposta não é gravada (CA-RSVP-09)",
-             "não fica gravada" in aviso_previa and c_api["estado"] == "pendente" and "resposta" not in c_api, aviso_previa)
+        R.ok("pré-visualização: o formulário funciona e mostra «Avisar a família», mas a resposta não é gravada (CA-RSVP-09)",
+             "não fica gravada" in aviso_previa and avisar_previa and c_api["estado"] == "pendente" and "resposta" not in c_api, aviso_previa)
         pg.reload()
         pg.wait_for_selector("li.cartao:has-text('Tia Joana')")
         R.ok("«Ver convite» na gestão não conta como abertura", "Não abriu" in pg.locator("li.cartao", has_text="Tia Joana").inner_text())
@@ -452,14 +453,14 @@ def correr(R, capturas):
              "No convite: vêm 2 pessoas. A família alterou depois." in pg.locator("li.cartao", has_text="Sr. Carlos Neto e Família").inner_text())
         pg2.reload()
         pg2.wait_for_selector("#resposta .resumo")
-        R.ok("ao reabrir, o convite mostra a resposta registada, com a correcção da família (CA-RSVP-07)",
-             pg2.inner_text("#resposta .resumo-val") == "Vou" and pg2.is_visible("#resp-alterar") and not pg2.is_visible("[data-rsvp='0']"))
+        avisar = urllib.parse.unquote(pg2.get_attribute("[data-rsvp='0']", "href"))
+        R.ok("ao reabrir, o convite mostra a resposta registada (com a correcção da família) e o aviso já com 1 pessoa (CA-RSVP-07)",
+             pg2.inner_text("#resposta .resumo-val") == "Vou" and pg2.is_visible("#resp-alterar") and "confirmo a minha presença (1 pessoa)" in avisar, avisar[:120])
         pg2.click("#resp-alterar")
-        R.ok("«Alterar resposta»: o formulário volta com a resposta e a mensagem", pg2.inner_text("#resp-n") == "1" and pg2.input_value("#resp-msg") == "Parabéns, Beatriz!")
+        R.ok("«Alterar resposta»: o formulário volta com a resposta e a mensagem",
+             pg2.inner_text("#resp-n") == "1" and pg2.input_value("#resp-msg") == "Parabéns, Beatriz!" and not pg2.is_visible("[data-rsvp='0']"))
         pg2.click("button[aria-label='Mais uma pessoa']")
-        with ctx2.expect_page() as nova:
-            pg2.click("[data-rsvp='0']")
-        nova.value.close()
+        pg2.click("#resp-enviar")
         pg2.wait_for_selector("#resposta .resumo-rot:has-text('Resposta registada')")
         R.ok("convite pessoal: sem erros na consola (CA-QUA-01)", not erros2, "; ".join(erros2[:2]))
         ctx2.close()
@@ -474,16 +475,33 @@ def correr(R, capturas):
         pg3.goto(ana["link"])
         pg3.click("#envelope")
         pg3.wait_for_timeout(2700)
-        fora = pg3.evaluate("[...document.querySelectorAll('main *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.right>innerWidth+1&&!e.closest('.decor')&&!e.closest('.gal')}).length")
-        R.ok("320 px: formulário de resposta sem transbordo horizontal (CA-RES-01)", fora == 0, f"fora={fora}")
+        transbordo = "[...document.querySelectorAll('main *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.right>innerWidth+1&&!e.closest('.decor')&&!e.closest('.gal')}).length"
+        fora = pg3.evaluate(transbordo)
         pg3.click("label:has(input[value=recusado])")
+        pg3.click("#resp-enviar")
+        pg3.wait_for_selector("#resposta .resumo-rot:has-text('Resposta registada')")
+        fora += pg3.evaluate(transbordo)
+        R.ok("320 px: formulário e «Avisar a família» sem transbordo horizontal (CA-RES-01)", fora == 0, f"fora={fora}")
+        recusa = urllib.parse.unquote(pg3.get_attribute("[data-rsvp='0']", "href"))
         with ctx3.expect_page() as nova:
             pg3.click("[data-rsvp='0']")
-        whatsapp = urllib.parse.unquote(nova.value.url)
         nova.value.close()
-        pg3.wait_for_selector("#resposta .resumo-rot:has-text('Resposta registada')")
-        R.ok("«Não vamos» no convite: grava «não vem» e o WhatsApp leva a mensagem de recusa",
-             "Lamento" in whatsapp and "Ana e Rui Mendes" in whatsapp and pg3.inner_text("#resposta .resumo-val") == "Não vamos" and not erros3)
+        R.ok("«Não vamos» no convite: grava «não vem», e o aviso leva a mensagem de recusa",
+             "Olá! Eu, Ana e Rui Mendes, infelizmente não vou poder estar presente na festa de 15 anos da Beatriz, no dia 15 de Maio." in recusa
+             and pg3.inner_text("#resposta .resumo-val") == "Não vamos" and not erros3, recusa[:140])
+        ctx3.close()
+
+        # se a gravação falhar, o convidado avisa na mesma a família pelo WhatsApp
+        ctx3, pg3, _ = pagina(b)
+        pg3.route("**/resposta", lambda r: r.abort())
+        pg3.goto(tia["link"])
+        pg3.click("#envelope")
+        pg3.wait_for_timeout(2700)
+        pg3.click("#resp-enviar")
+        pg3.wait_for_selector("#resp-estado:has-text('Não foi possível')")
+        avisar = urllib.parse.unquote(pg3.get_attribute("[data-rsvp='0']", "href") or "")
+        R.ok("se a gravação falhar: aviso de erro e «Avisar a família pelo WhatsApp» com a resposta escolhida (CA-RSVP-06)",
+             pg3.is_visible("[data-rsvp='0']") and "Olá! Eu, Tia Joana, confirmo a minha presença (1 pessoa)" in avisar, avisar[:120])
         ctx3.close()
         pg.reload()
         pg.wait_for_selector("li.cartao.e-recusado:has-text('Ana e Rui Mendes')")

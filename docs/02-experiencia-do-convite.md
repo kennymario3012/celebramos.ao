@@ -14,7 +14,7 @@ Este é o documento central. Descreve, com valores exactos, a experiência que o
 2. Abre o link no telemóvel e vê o **ecrã de abertura**: um envelope fechado, endereçado a ele.
 3. Toca no envelope: o selo de cera salta, a aba abre, a carta sobe e o ecrã dissolve-se.
 4. Fica na **primeira secção** do convite. Cada secção ocupa um ecrã inteiro e o deslizar «encaixa» no início de cada secção.
-5. Pelo caminho pode: confirmar presença (no link pessoal, responde no próprio convite e o WhatsApp abre com a mensagem para a família), abrir o local no Google Maps ou no Waze, ver fotografias em ecrã inteiro, acompanhar a contagem regressiva e adicionar o evento ao calendário.
+5. Pelo caminho pode: confirmar presença (no link pessoal, responde no próprio convite e pode avisar a família pelo WhatsApp, com a mensagem já escrita), abrir o local no Google Maps ou no Waze, ver fotografias em ecrã inteiro, acompanhar a contagem regressiva e adicionar o evento ao calendário.
 6. Se voltar a abrir o link **na mesma sessão** do navegador, o envelope não volta a aparecer.
 
 ---
@@ -138,32 +138,33 @@ Para cada secção: propósito, conteúdo (campos da configuração em [04](04-m
 - **1 ou 2 botões redondos** (8 rem, fundo `--accent`, texto branco em maiúsculas, ícone WhatsApp 34 px), lado a lado com `gap: 1.5rem` (passam para baixo em ecrãs estreitos). Ex.: «Confirmar presença», ou «Confirmar presença (mãe)» e «(pai)», ou «(noivo)» e «(noiva)».
 - Nota por baixo, a cor `--muted` (ex.: «A sua confirmação segue por WhatsApp directamente para a família da debutante.»).
 - **Comportamento:** cada botão abre `https://wa.me/<número internacional sem +>?text=<mensagem>` num novo separador. A mensagem é gerada a partir de um modelo com o nome do convidado e o número de pessoas:
-  `Olá! Confirmo a presença na festa de 15 anos da Beatriz (15 de Maio).\nConvidado: Sr. Carlos Neto e Família (3 pessoas)`.
+  `Olá! Eu, Sr. Carlos Neto e Família, confirmo a minha presença (3 pessoas) na festa de 15 anos da Beatriz, no dia 15 de Maio.`.
   No link geral (sem convidado), `{convidado}` passa a «[o seu nome]».
 - Sem número configurado (pré-visualização): o botão não abre nada e mostra um aviso no fundo do ecrã durante 3,8 s.
 - **Na plataforma:** nos botões que só abrem o WhatsApp (link pessoal depois do prazo), o toque é registado como intenção de confirmação (`sendBeacon`), sem atrasar a abertura do WhatsApp. O link continua a apontar directamente para `wa.me` (ver [05](05-plataforma.md#confirmações)).
 
 #### Na plataforma: resposta dentro do convite (link pessoal)
 
-No link pessoal, até ao prazo, a secção ganha um formulário entre o texto do prazo e os botões redondos ([decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)). O protótipo e o link geral ficam como acima, só com o WhatsApp.
+No link pessoal, até ao prazo, a secção ganha um formulário no lugar dos botões do WhatsApp ([decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)). O protótipo e o link geral ficam como acima, só com o WhatsApp.
 
 | Elemento | Especificação |
 |---|---|
 | Escolha | Dois botões em pílula (altura 2,75 rem, letra dos botões em maiúsculas) numa cápsula com borda `--border-valido`, `max-width: 19rem`. «Vou» e «Não vou», ou «Vamos» e «Não vamos» num convite para mais de uma pessoa. O escolhido tem fundo `--accent` e texto branco. Por omissão: «Vou» ou «Vamos». São botões de rádio (no teclado, com as setas). |
 | Pessoas | Só com «Vou» ou «Vamos» e num convite para mais de uma pessoa. «Quantas pessoas vão?» em versaletes, cor `--muted`, e um contador (−) N (+) com botões redondos de 2,75 rem e borda `--border-valido`. Vai de 1 até ao número do convite e, por omissão, são todas. |
 | Mensagem | A ligação «Escrever uma mensagem à família» abre uma caixa de texto opcional, até 300 caracteres, com borda `--border-valido` e cantos de 0,85 rem. |
-| Envio | Os botões redondos da secção (1 ou 2, como acima). Com «Não vou», o rótulo passa a «Enviar resposta», com o parêntese do rótulo original, se houver («Enviar resposta (mãe)»). |
+| Gravar | Um botão redondo como os da secção (8 rem, fundo `--accent`), com um ✓ (`check`, 34 px) em vez do ícone do WhatsApp e `margin-top: .5rem`. Rótulo: o do primeiro botão da configuração, sem o parêntese («Confirmar presença»); com «Não vou», «Enviar resposta». Não abre o WhatsApp. |
+| Avisar a família | Depois de gravar: 1 ou 2 botões em pílula (fundo `--accent`, ícone WhatsApp 28 px, `font-size: .95rem`, texto equilibrado em duas linhas se não couber) com «Avisar a família pelo WhatsApp», ou «Avisar pelo WhatsApp (mãe)» e «(pai)» com dois números (o parêntese do rótulo da configuração). Cada um abre `wa.me` num novo separador. |
 | Espaçamento | Com o formulário, `gap: 1.25rem` entre os blocos e `padding-bottom: 10rem`, para a nota não ficar por cima do canto de baixo. A secção pode ficar mais alta do que o ecrã. |
 
 **Comportamento:**
 
-- O toque num botão redondo abre o WhatsApp **e** grava a resposta, no mesmo gesto. O botão é um link com a mensagem do que está escolhido, e a gravação segue ao mesmo tempo (`fetch` com `keepalive`).
-- A mensagem do WhatsApp: com «Vou», o modelo de confirmação com as pessoas escolhidas (« (2 pessoas)»); com «Não vou», o modelo de recusa (`confirmacao.mensagemRecusa`). A mensagem do convidado vai no fim, depois de uma linha em branco ([04 §3](04-modelo-de-dados.md#3-mensagem-de-confirmação)).
-- Gravada a resposta, o formulário e os botões dão lugar a um quadro com borda `--border-valido` e cantos de 1 rem: «Resposta registada» em versaletes espaçadas (`--muted`), a resposta em versaletes negrito («Vamos · 2 pessoas», «Vou», «Não vamos») e a ligação «Alterar resposta». Aparece também o aviso «Resposta registada.».
-- Se a gravação falhar, aparece por baixo do formulário: «Não foi possível registar a resposta no convite. Envie a mensagem do WhatsApp à família, ou tente outra vez.»
-- Ao reabrir o link: o mesmo quadro, com «A sua resposta» (também quando foi a família a marcá-la). «Alterar resposta» volta ao formulário, com a resposta e a mensagem anteriores.
+- O botão redondo **só grava** a resposta (`fetch`). O WhatsApp não abre sozinho.
+- Gravada a resposta, o formulário dá lugar a um quadro com borda `--border-valido` e cantos de 1 rem: «Resposta registada» em versaletes espaçadas (`--muted`), a resposta em versaletes negrito («Vamos · 2 pessoas», «Vou», «Não vamos») e a ligação «Alterar resposta». Por baixo, «Avisar a família pelo WhatsApp». Aparece também o aviso «Resposta registada.».
+- A mensagem do WhatsApp segue a resposta registada ([04 §3](04-modelo-de-dados.md#3-mensagem-de-confirmação)). Com «Vou», o modelo de confirmação com as pessoas: `Olá! Eu, Sr. Carlos Neto e Família, confirmo a minha presença (3 pessoas) na festa de 15 anos da Beatriz, no dia 15 de Maio.`. Com «Não vou», o modelo de recusa (`confirmacao.mensagemRecusa`): `Olá! Eu, Sr. Carlos Neto e Família, infelizmente não vou poder estar presente na festa de 15 anos da Beatriz, no dia 15 de Maio. Agradeço muito o convite e desejo uma festa muito bonita!`. A mensagem do convidado vai no fim, depois de uma linha em branco.
+- Se a gravação falhar, aparece por baixo do formulário «Não foi possível registar a resposta no convite. Tente outra vez, ou avise a família pelo WhatsApp.», e os botões «Avisar» aparecem logo, com a resposta escolhida: o convidado nunca fica sem forma de avisar a família.
+- Ao reabrir o link: o mesmo quadro, com «A sua resposta» (também quando foi a família a marcá-la), e «Avisar a família pelo WhatsApp». «Alterar resposta» volta ao formulário, com a resposta e a mensagem anteriores.
 - **Depois do prazo** (o fim do dia de `confirmacao.ate`, em Luanda): o quadro com a resposta registada, se houver, sem «Alterar resposta». Por baixo, «O prazo para responder no convite terminou. Para mudar a resposta, fale com a família pelo WhatsApp.» («Para responder, fale…» se não houver resposta) e os botões redondos, que só abrem o WhatsApp.
-- **Pré-visualização** (a partir da zona de gestão): o formulário funciona e o WhatsApp abre, mas a resposta não fica gravada (aviso «Pré-visualização: a resposta não fica gravada.»).
+- **Pré-visualização** (a partir da zona de gestão): o formulário e o botão «Avisar» funcionam, mas a resposta não fica gravada (aviso «Pré-visualização: a resposta não fica gravada.»).
 
 ### 4.4 Galeria de fotos (opcional)
 
