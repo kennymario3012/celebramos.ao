@@ -105,6 +105,30 @@ html[data-convite-aberto] [data-abertura]{display:none}
 .btn-row{display:flex;flex-wrap:wrap;justify-content:center;gap:1.5rem}
 .link-sub{display:inline-flex;align-items:center;gap:.375rem;font-family:var(--f-caps);font-weight:500;font-size:1rem;color:var(--muted);text-decoration:underline;text-underline-offset:4px}
 
+/* confirmação dentro do convite (plataforma, link pessoal) */
+.resp{display:flex;flex-direction:column;align-items:center;gap:.75rem;width:100%;max-width:22rem}
+.resp[hidden],.resp [hidden],.btn-row[hidden]{display:none}
+.resp .link-sub{min-height:2.75rem}
+.opcoes{display:flex;width:100%;max-width:19rem;padding:.25rem;border:1px solid var(--border-valido);border-radius:9999px;background:rgba(255,255,255,.4)}
+.opcao{position:relative;display:block;flex:1}
+.opcao input{position:absolute;top:50%;left:50%;width:1px;height:1px;opacity:0;pointer-events:none}
+.opcao span{display:flex;align-items:center;justify-content:center;min-height:2.75rem;padding:0 .75rem;border-radius:9999px;font-family:var(--f-button);font-size:.85rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);cursor:pointer;transition:background-color .15s,color .15s}
+.opcao input:checked+span{background:var(--accent);color:var(--accent-contrast);box-shadow:0 6px 14px -9px rgb(0 0 0/.55)}
+.opcao input:focus-visible+span{outline:2px solid var(--accent);outline-offset:3px}
+.qtd{display:flex;flex-direction:column;align-items:center;gap:.25rem}
+.qtd-rot{font-size:clamp(1rem,4.6vw,1.15rem);font-size:clamp(1rem,4.6cqi,1.15rem);letter-spacing:.04em;color:var(--muted)}
+.qtd-ctl{display:flex;align-items:center;gap:1.25rem}
+.qtd-ctl button{display:inline-flex;align-items:center;justify-content:center;width:2.75rem;height:2.75rem;border:1px solid var(--border-valido);border-radius:9999px;color:var(--accent);font-family:var(--f-body);font-size:1.6rem;line-height:1}
+.qtd-ctl button:disabled{opacity:.35;cursor:default}
+.qtd output{min-width:2ch;font-family:var(--f-body);font-size:clamp(1.8rem,8.5vw,2.2rem);font-size:clamp(1.8rem,8.5cqi,2.2rem);font-weight:500;line-height:1;font-variant-numeric:lining-nums tabular-nums;text-align:center}
+.resp textarea{display:block;width:100%;min-height:4.6rem;padding:.6rem .85rem;border:1px solid var(--border-valido);border-radius:.85rem;background:rgba(255,255,255,.6);color:var(--ink);font-family:var(--f-body);font-size:1.05rem;line-height:1.35;resize:vertical}
+.resp textarea::placeholder{color:var(--muted)}
+.resp textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.resumo{display:flex;flex-direction:column;align-items:center;gap:.3rem;width:100%;border:1px solid var(--border-valido);border-radius:1rem;padding:1rem 1.25rem}
+.resumo-rot{font-size:clamp(.85rem,4vw,1rem);font-size:clamp(.85rem,4cqi,1rem);letter-spacing:.16em;color:var(--muted)}
+.resumo-val{font-size:clamp(1.2rem,6vw,1.6rem);font-size:clamp(1.2rem,6cqi,1.6rem);font-weight:700;letter-spacing:.04em;color:var(--ink)}
+.resp-estado:empty{display:none}
+
 /* convite */
 .mono-xl{font-size:clamp(4.5rem,22vw,6rem);font-size:clamp(4.5rem,22cqi,6rem)}
 .bencao{font-size:clamp(1.1rem,5.2vw,1.4rem);font-size:clamp(1.1rem,5.2cqi,1.4rem);letter-spacing:.05em}
@@ -329,7 +353,8 @@ const CONFIG = {
     "telefone": ""
    }
   ],
-  "mensagem": "Olá! Confirmo a presença na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}{pessoas}"
+  "mensagem": "Olá! Confirmo a presença na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}{pessoas}",
+  "mensagemRecusa": "Olá! Lamento, mas não será possível estar presente na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}"
  },
  "textos": {
   "confirmarLead": "Por favor, confirme a sua presença no baile até",
@@ -588,6 +613,7 @@ const CONFIG = {
         <div class="in px6" style="gap:2rem">
           <h2 class="h2" id="t-confirmacao"><span data-icon="circle-check-filled:56"></span><span class="script">Confirmação</span><span class="caps">de presença</span></h2>
           <p class="lead body"><span data-t="confirmarLead"></span> <span data-t="confirmarAte"></span>.</p>
+          <div class="resp" id="resposta" hidden></div>
           <div class="btn-row" id="rsvp"></div>
           <p class="nota body" data-t="notaConfirmacao"></p>
         </div>
@@ -828,27 +854,146 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
   }
 
   /* ---------- confirmação por WhatsApp ---------- */
+  /* marcadores substituídos em todas as ocorrências; {homenageado} é o mesmo que {debutante} */
+  function preencher(modelo, v) {
+    return modelo.replace(/\{(\w+)\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(v, k) ? v[k] : m; });
+  }
+  function mensagemConfirmacao(estado, pessoas, extra) {
+    var modelo = estado === "recusado"
+      ? C.confirmacao.mensagemRecusa || "Olá! Lamento, mas não será possível estar presente no dia {dataCurta}.\nConvidado: {convidado}"
+      : C.confirmacao.mensagem;
+    return preencher(modelo, {
+      debutante: C.debutante, homenageado: C.debutante, dataCurta: d.dia + " de " + MESES[d.mes - 1],
+      convidado: convidado ? convidado.nome : "[o seu nome]",
+      pessoas: pessoas ? " (" + pessoasTxt(pessoas) + ")" : ""
+    }) + (extra ? "\n\n" + extra : "");
+  }
+  var rsvp = $("#rsvp"), boxR = $("#resposta");
   function montarConfirmacao() {
-    var dataCurta = d.dia + " de " + MESES[d.mes - 1];
-    var nome = convidado ? convidado.nome : "";
-    var msg = C.confirmacao.mensagem
-      .replace("{convidado}", nome || "[o seu nome]")
-      .replace("{pessoas}", convidado && convidado.pessoas ? " (" + pessoasTxt(convidado.pessoas) + ")" : "")
-      .replace("{debutante}", C.debutante)
-      .replace("{dataCurta}", dataCurta);
-    $("#rsvp").innerHTML = C.confirmacao.botoes.map(function (b, i) {
-      var tel = String(b.telefone || "").replace(/\D/g, "");
-      var href = tel ? "https://wa.me/" + tel + "?text=" + encodeURIComponent(msg) : "#";
-      return '<a class="btn btn-round" data-rsvp="' + i + '" href="' + href + '"' + (tel ? ' target="_blank" rel="noopener noreferrer"' : "") + ">" +
-        icon("brand-whatsapp:34") + "<span>" + esc(b.rotulo) + "</span></a>";
+    rsvp.innerHTML = C.confirmacao.botoes.map(function (b, i) {
+      return '<a class="btn btn-round" data-rsvp="' + i + '" href="#">' + icon("brand-whatsapp:34") + "<span>" + esc(b.rotulo) + "</span></a>";
     }).join("");
-    $$("[data-rsvp]").forEach(function (a) {
-      a.addEventListener("click", function () { if (a.getAttribute("href") !== "#") registar("confirmar"); });
-      if (a.getAttribute("href") === "#") a.addEventListener("click", function (e) {
-        e.preventDefault();
-        aviso("Pré-visualização: o número de WhatsApp para a confirmação será configurado na versão final.");
-      });
+    var R = C.responder, actual = convidado && convidado.resposta, limite = (convidado && convidado.pessoas) || 1;
+    resp.modo = !R || !convidado ? "" : R.fechado ? "fechado" : actual ? "resumo" : "formulario";
+    resp.estado = actual ? actual.estado : "confirmado";
+    resp.pessoas = Math.max(1, Math.min(limite, (actual && actual.pessoas) || limite));
+    resp.mensagem = (actual && actual.mensagem) || "";
+    resp.registada = false;
+    desenharResposta();
+  }
+  /* o WhatsApp abre no mesmo toque: o link leva sempre a mensagem do que está escolhido */
+  function actualizarBotoes() {
+    var form = resp.modo === "formulario", estado = form ? resp.estado : "confirmado";
+    var pessoas = form ? (estado === "confirmado" ? resp.pessoas : 0) : convidado && convidado.pessoas;
+    var msg = mensagemConfirmacao(estado, pessoas, form ? limpar(resp.mensagem) : "");
+    $$("[data-rsvp]", rsvp).forEach(function (a) {
+      var b = C.confirmacao.botoes[+a.getAttribute("data-rsvp")], tel = String(b.telefone || "").replace(/\D/g, "");
+      a.setAttribute("href", tel ? "https://wa.me/" + tel + "?text=" + encodeURIComponent(msg) : "#");
+      if (tel) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+      var m = /\(([^)]*)\)\s*$/.exec(b.rotulo); /* «Confirmar presença (mãe)» → «Enviar resposta (mãe)» */
+      a.lastChild.textContent = estado === "recusado" ? "Enviar resposta" + (m ? " (" + m[1] + ")" : "") : b.rotulo;
     });
+  }
+  rsvp.addEventListener("click", function (e) {
+    var a = e.target.closest ? e.target.closest("[data-rsvp]") : null;
+    if (!a) return;
+    var semNumero = a.getAttribute("href") === "#";
+    if (semNumero || resp.aEnviar) e.preventDefault();
+    if (resp.modo === "formulario") { if (!resp.aEnviar) enviarResposta(semNumero); }
+    else if (semNumero) aviso("Pré-visualização: o número de WhatsApp para a confirmação será configurado na versão final.");
+    else registar("confirmar");
+  });
+
+  /* ---------- confirmação dentro do convite (plataforma, link pessoal: C.responder) ---------- */
+  var resp = { modo: "", estado: "confirmado", pessoas: 1, mensagem: "", registada: false, aEnviar: false };
+  function limpar(s) { return s.replace(/\s+/g, " ").trim(); }
+  function plural() { return convidado.pessoas > 1; }
+  function textoResposta(r) {
+    if (r.estado === "recusado") return plural() ? "Não vamos" : "Não vou";
+    return r.pessoas === 1 || !plural() ? "Vou" : "Vamos · " + pessoasTxt(r.pessoas);
+  }
+  function opcao(valor, rotulo) {
+    return '<label class="opcao"><input type="radio" name="resp-estado" value="' + valor + '"' + (resp.estado === valor ? " checked" : "") +
+      "><span>" + rotulo + "</span></label>";
+  }
+  function desenharResposta() {
+    var modo = resp.modo, actual = convidado && convidado.resposta;
+    boxR.hidden = !modo;
+    rsvp.hidden = modo === "resumo";
+    /* mais conteúdo: menos espaço entre blocos e o fim afastado do canto de baixo (decoração) */
+    boxR.parentNode.style.gap = modo ? "1.25rem" : "2rem";
+    boxR.parentNode.style.paddingBottom = modo ? "10rem" : "";
+    if (modo === "formulario") {
+      boxR.innerHTML = '<div class="opcoes" role="radiogroup" aria-label="A sua resposta">' +
+        opcao("confirmado", plural() ? "Vamos" : "Vou") + opcao("recusado", plural() ? "Não vamos" : "Não vou") + "</div>" +
+        (plural() ? '<div class="qtd" id="resp-qtd"><p class="caps qtd-rot" id="resp-qtd-rot">Quantas pessoas vão?</p><div class="qtd-ctl">' +
+          '<button type="button" data-q="-1" aria-label="Menos uma pessoa">−</button><output id="resp-n" aria-labelledby="resp-qtd-rot" aria-live="polite"></output>' +
+          '<button type="button" data-q="1" aria-label="Mais uma pessoa">+</button></div></div>' : "") +
+        '<button type="button" class="link-sub" id="resp-escrever">Escrever uma mensagem à família</button>' +
+        '<textarea id="resp-msg" rows="2" maxlength="300" aria-label="Mensagem para a família (opcional)" placeholder="Mensagem para a família (opcional)"></textarea>' +
+        '<p class="nota body resp-estado" id="resp-estado" role="status"></p>';
+      var ta = $("#resp-msg");
+      ta.value = resp.mensagem; ta.hidden = !resp.mensagem; $("#resp-escrever").hidden = !!resp.mensagem;
+      actualizarQtd();
+    } else if (modo) {
+      boxR.innerHTML = (actual ? '<div class="resumo"><p class="caps resumo-rot">' + (resp.registada ? "Resposta registada" : "A sua resposta") +
+          '</p><p class="caps resumo-val">' + esc(textoResposta(actual)) + "</p>" +
+          (modo === "resumo" ? '<button type="button" class="link-sub" id="resp-alterar">Alterar resposta</button>' : "") + "</div>" : "") +
+        (modo === "fechado" ? '<p class="nota body">O prazo para responder no convite terminou. ' + (actual ? "Para mudar a resposta" : "Para responder") +
+          ", fale com a família pelo WhatsApp.</p>" : "");
+    } else boxR.innerHTML = "";
+    actualizarBotoes();
+  }
+  function actualizarQtd() {
+    var q = $("#resp-qtd");
+    if (!q) return;
+    q.hidden = resp.estado !== "confirmado";
+    $("#resp-n").textContent = resp.pessoas;
+    $('[data-q="-1"]', q).disabled = resp.pessoas <= 1;
+    $('[data-q="1"]', q).disabled = resp.pessoas >= convidado.pessoas;
+  }
+  boxR.addEventListener("change", function (e) {
+    if (e.target.name !== "resp-estado") return;
+    resp.estado = e.target.value; actualizarQtd(); actualizarBotoes();
+  });
+  boxR.addEventListener("input", function (e) {
+    if (e.target.id === "resp-msg") { resp.mensagem = e.target.value; actualizarBotoes(); }
+  });
+  boxR.addEventListener("click", function (e) {
+    var t = e.target.closest ? e.target.closest("button") : null;
+    if (!t) return;
+    if (t.hasAttribute("data-q")) {
+      resp.pessoas = Math.max(1, Math.min(convidado.pessoas, resp.pessoas + Number(t.getAttribute("data-q"))));
+      actualizarQtd(); actualizarBotoes();
+    } else if (t.id === "resp-escrever") {
+      t.hidden = true; var ta = $("#resp-msg"); ta.hidden = false; ta.focus();
+    } else if (t.id === "resp-alterar") {
+      resp.modo = "formulario"; resp.registada = false; desenharResposta();
+      var r = $("input:checked", boxR); if (r) r.focus();
+    }
+  });
+  /* grava a resposta enquanto o WhatsApp abre (o link segue o seu caminho); sem rede, o aviso pelo WhatsApp chega na mesma */
+  function enviarResposta(semNumero) {
+    var corpo = { estado: resp.estado }, m = limpar(resp.mensagem), estado = $("#resp-estado");
+    if (resp.estado === "confirmado") corpo.pessoas = resp.pessoas;
+    if (m) corpo.mensagem = m;
+    if (!C.responder.caminho) { aviso("Pré-visualização: a resposta não fica gravada."); return; }
+    resp.aEnviar = true;
+    estado.textContent = "A registar a resposta…";
+    fetch(C.responder.caminho, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo), keepalive: true })
+      .then(function (r) {
+        resp.aEnviar = false;
+        if (r.status === 410) { C.responder.fechado = true; resp.modo = "fechado"; desenharResposta(); return; }
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        convidado.resposta = { estado: corpo.estado, pessoas: corpo.pessoas, mensagem: corpo.mensagem };
+        resp.modo = "resumo"; resp.registada = true; desenharResposta();
+        aviso("Resposta registada.");
+      })
+      .catch(function () {
+        resp.aEnviar = false;
+        estado.textContent = "Não foi possível registar a resposta no convite. " +
+          (semNumero ? "Tente outra vez." : "Envie a mensagem do WhatsApp à família, ou tente outra vez.");
+      });
   }
 
   personalizar();

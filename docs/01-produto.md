@@ -27,7 +27,7 @@ Para o anfitrião, o convite tem de ser **bonito, rápido de aprovar e fácil de
 1. **Momento de abertura:** o envelope com selo de cera dá ao convite digital o ritual do convite de papel.
 2. **Tudo no telemóvel, num só link:** data, locais com Google Maps e Waze, programa, regras de traje, lista de presentes, contagem regressiva e calendário.
 3. **Pessoal:** cada convidado vê o seu nome no envelope e no convite, e para quantas pessoas é válido.
-4. **Confirmação sem atrito:** um toque abre o WhatsApp com a mensagem já escrita para a família.
+4. **Confirmação sem atrito:** um toque grava a resposta e abre o WhatsApp com a mensagem já escrita para a família.
 5. **Feito à medida, com rapidez:** temas e secções configuráveis. A família aprova num link de pré-visualização.
 
 ## Modelo de serviço
@@ -39,7 +39,7 @@ Para o anfitrião, o convite tem de ser **bonito, rápido de aprovar e fácil de
 
 ### Dentro (MVP)
 
-- Convite com a experiência completa do [02](02-experiencia-do-convite.md): envelope, secções, personalização, confirmação por WhatsApp, mapas, calendário, contagem regressiva e computador.
+- Convite com a experiência completa do [02](02-experiencia-do-convite.md): envelope, secções, personalização, confirmação (dentro do convite no link pessoal, com aviso pelo WhatsApp), mapas, calendário, contagem regressiva e computador.
 - Temas configuráveis (tokens de cor e arte) e ordem de secções configurável.
 - Back-office do operador para criar, editar, pré-visualizar e publicar convites.
 - **Zona de gestão de convidados para a família** (acesso por PIN, sem conta): cadastrar convidados um a um ou colando uma lista, links pessoais, envio pelo WhatsApp, aberturas, confirmações e exportação. **Já implementada** em [`apps/web`](../apps/web/) (ver [05](05-plataforma.md#zona-de-gestão-de-convidados)).
@@ -49,7 +49,6 @@ Para o anfitrião, o convite tem de ser **bonito, rápido de aprovar e fácil de
 
 - Editor self-service e pagamentos online (fase 2).
 - Envio automático de mensagens pelo WhatsApp em nome do anfitrião (exige a WhatsApp Business API e aprovação de modelos de mensagem).
-- Confirmação com formulário dentro do convite (ver [05](05-plataforma.md#confirmações)).
 - Mesas e lugares, livro de mensagens, galeria pós-evento, transmissão em directo.
 - Outras línguas além do português.
 
@@ -60,7 +59,7 @@ Para o anfitrião, o convite tem de ser **bonito, rápido de aprovar e fácil de
 3. **Revisões:** a família responde pelo WhatsApp com textos, áudios e capturas de ecrã assinaladas. Houve **6 rondas** de alterações em uma semana (ver «Decisões validadas»).
 4. **Aprovação** e decisão sobre o envio: link geral ou links pessoais.
 5. **Cadastro e envio:** a família cadastra os convidados na zona de gestão e envia cada link pessoal pelo WhatsApp.
-6. **Confirmações** chegam ao WhatsApp da família.
+6. **Confirmações** ficam gravadas na zona de gestão e chegam também ao WhatsApp da família.
 7. **Dia do evento:** o convite continua acessível (mapa, programa).
 
 ## Decisões validadas
@@ -99,6 +98,6 @@ Decisões tomadas com o primeiro cliente real (festa de 15 anos, Novembro de 202
 |---|---|
 | Dados pessoais de **menores** (nomes, fotografias) num link partilhável | Galeria desligada por omissão. Links com tokens impossíveis de adivinhar. `noindex`. Apagar os dados após o evento (ver [06](06-requisitos-nao-funcionais.md#privacidade-e-protecção-de-dados)). |
 | Clientes pedirem temas com **personagens protegidas** (Disney e outras marcas) | Os temas são sempre conceitos genéricos com arte original («A Bela e o Príncipe», nunca personagens, logótipos ou cenas reconhecíveis). Ver [03](03-design-e-temas.md#propriedade-intelectual). |
-| A confirmação pelo WhatsApp não gera dados estruturados | Registar a intenção de confirmação no servidor. O anfitrião marca as confirmações no painel. Fase 2: formulário opcional (ver [05](05-plataforma.md#confirmações)). |
+| A confirmação pelo WhatsApp não gera dados estruturados | No link pessoal, o convidado responde no convite e a resposta fica gravada ([decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)). No link geral, a família continua a marcar à mão. |
 | Telemóveis antigos e navegadores dentro de aplicações (WhatsApp, Facebook) | Alternativas para navegadores antigos já testadas no protótipo. Matriz de compatibilidade (ver [06](06-requisitos-nao-funcionais.md#compatibilidade)). |
 | Dependência de serviços externos (Google Fonts, mapas) | Fontes alojadas na própria plataforma. Os mapas são só links externos e nunca bloqueiam o convite. |

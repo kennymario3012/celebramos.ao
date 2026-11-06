@@ -1,7 +1,7 @@
 import { lerActividade, lerLista } from "@/lib/convidados";
 import { autorizar, erro, json, origemPublica } from "@/lib/http";
 import { carregarEvento } from "@/lib/eventos";
-import { dataCurta, dataLonga, MENSAGEM_ENVIO_PADRAO } from "@/lib/texto";
+import { dataCurta, dataLonga, fimDoPrazo, MENSAGEM_ENVIO_PADRAO } from "@/lib/texto";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         dataLonga: dataLonga(cfg),
         hora: cfg.data.hora,
         prazoConfirmacao: cfg.confirmacao.ate,
+        // depois do prazo, os convidados já não respondem no convite (só a família altera)
+        prazoTerminado: Date.now() >= fimDoPrazo(cfg).getTime(),
         linkGeral: a.evento.linkGeralActivo === false ? null : `${origem}/c/${slug}`,
         cores: cores(cfg.tema.tokens),
       },

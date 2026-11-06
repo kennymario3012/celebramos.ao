@@ -17,7 +17,7 @@ Especificação da plataforma **celebramos.ao**. É a fonte de verdade para quem
 
 Imagens de referência (capturas do protótipo e da zona de gestão): [`img/`](img/). A implementação de referência está em [`../prototipo/`](../prototipo/). A primeira parte da plataforma (convite servido com links pessoais e zona de gestão de convidados) está em [`../apps/web/`](../apps/web/).
 
-Decisões tomadas: [`decisoes/`](decisoes/). A primeira é a [0001 · Gestão de convidados pela própria família](decisoes/0001-gestao-de-convidados-pela-familia.md).
+Decisões tomadas: [`decisoes/`](decisoes/). A primeira é a [0001 · Gestão de convidados pela própria família](decisoes/0001-gestao-de-convidados-pela-familia.md); a mais recente, a [0003 · Confirmação de presença dentro do convite](decisoes/0003-confirmacao-dentro-do-convite.md).
 
 ## Ordem de leitura
 
@@ -52,8 +52,9 @@ Decisões tomadas: [`decisoes/`](decisoes/). A primeira é a [0001 · Gestão de
 | **Tokens** | Variáveis CSS do tema (`--bg`, `--accent`…). |
 | **Decoração** | As imagens florais de cada secção (cantos e grinaldas) e a sua posição. |
 | **Harmonia** | As regras que evitam cortes e excessos nas fronteiras entre secções. |
-| **Confirmação** | O convidado avisa que vai. Hoje é feita por WhatsApp, com uma mensagem pré-escrita. |
-| **Intenção de confirmação** | O registo de que o convidado tocou em «Confirmar presença». |
+| **Confirmação** | O convidado diz se vai e quantas pessoas vão. No link pessoal, responde dentro do convite e o WhatsApp abre com a mensagem para a família; no link geral, é só pelo WhatsApp, com uma mensagem pré-escrita. |
+| **Resposta no convite** | A resposta dada pelo convidado no próprio convite (vou ou não vou, pessoas, mensagem). Fica gravada e aparece na zona de gestão. |
+| **Intenção de confirmação** | O registo de que o convidado tocou em «Confirmar presença» quando os botões só abrem o WhatsApp. |
 | **Versão** | Uma fotografia imutável da configuração, criada a cada publicação. |
 | **Operador** | Membro da equipa celebramos.ao que monta convites para clientes. |
 | **Zona de gestão de convidados** | Página `/gestao/{slug}` onde a família, com um PIN, cadastra os convidados, envia os links e acompanha as respostas. |

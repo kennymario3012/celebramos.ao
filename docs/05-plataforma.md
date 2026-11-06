@@ -4,7 +4,7 @@ O que se constrói à volta do convite: criar, rever, publicar, enviar e acompan
 
 > Tudo o que está marcado **«a confirmar»** é uma proposta. Antes de implementar, confirmar com o titular do projecto (ver [08](08-roadmap.md#decisões-em-aberto)).
 
-> **Estado (Novembro de 2026):** a primeira parte da plataforma está em [`apps/web`](../apps/web/). Tem o convite servido com links pessoais (token no caminho) e a **zona de gestão de convidados** para a família, com acesso por PIN ([decisão 0001](decisoes/0001-gestao-de-convidados-pela-familia.md)). Fica alojada no **cPanel** do titular ([decisão 0002](decisoes/0002-alojamento-no-cpanel.md)). O resto deste documento continua a ser o alvo.
+> **Estado (Novembro de 2026):** a primeira parte da plataforma está em [`apps/web`](../apps/web/). Tem o convite servido com links pessoais (token no caminho), a **confirmação dentro do convite** ([decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)) e a **zona de gestão de convidados** para a família, com acesso por PIN ([decisão 0001](decisoes/0001-gestao-de-convidados-pela-familia.md)). Fica alojada no **cPanel** do titular ([decisão 0002](decisoes/0002-alojamento-no-cpanel.md)). O resto deste documento continua a ser o alvo.
 
 ## Módulos
 
@@ -120,18 +120,18 @@ Objectivo: montar e alterar um convite sem tocar em código. Meta: ≤ 2 horas p
 | Função | Comportamento |
 |---|---|
 | Entrar | PIN do evento. O ecrã de entrada só mostra o nome do evento. |
-| Resumo | Convites e pessoas convidadas, enviados, abriram, pessoas que vêm, não vêm, sem resposta. |
+| Resumo | Convites e pessoas convidadas, enviados, abriram, pessoas que vêm, não vêm, sem resposta. Depois do prazo de confirmação, o cabeçalho diz «prazo terminado». |
 | Adicionar convidado | Nome como aparece no envelope, pessoas (1–30), WhatsApp (opcional, normalizado para `244…`), grupo, notas. Avisa se o nome já existir. Tem «Gravar e adicionar outro». |
 | Colar lista | Um convidado por linha (`nome; pessoas; telefone; grupo`). Mostra a pré-visualização com as linhas inválidas assinaladas antes de importar. |
 | Enviar pelo WhatsApp | Abre `wa.me` com a mensagem e o link pessoal e marca «Enviado». A mensagem é editável, com `{convidado}`, `{homenageado}`, `{dataCurta}`, `{hora}`, `{pessoas}` e `{link}` (obrigatório). |
 | Copiar link, Ver convite | «Ver convite» abre com `?previa=1`, que não conta como abertura. |
-| Resposta | Sem resposta, Vem (com o número de pessoas que vêm) ou Não vem. |
-| Sinais por convidado | «Enviado», «Abriu» (primeira abertura) e «Tocou em confirmar», com data e hora de Luanda. |
+| Resposta | Sem resposta, Vem (com o número de pessoas que vêm) ou Não vem. O convidado responde no convite ([Confirmações](#confirmações)), e a família pode marcar ou corrigir à mão. Se a família alterar a resposta do convidado, o cartão mostra o que ele respondeu. |
+| Sinais por convidado | «Enviado», «Abriu» (primeira abertura), «Respondeu no convite» (com a mensagem do convidado, se a deixou) e «Tocou em confirmar» (só depois do prazo, quando o convite volta a ter apenas os botões do WhatsApp), com data e hora de Luanda. |
 | Filtros e pesquisa | Por enviar, enviados, abriram, não abriram, vêm, não vêm, sem resposta. Pesquisa sem acentos. |
 | Link novo | Gera outro token: o link anterior deixa de funcionar (enviado à pessoa errada). |
 | Apagar | Retira o convidado. O link deixa de funcionar. |
-| Exportar | CSV para o Excel (separador `;`, BOM UTF-8): nome, pessoas, telefone, grupo, estado, pessoas confirmadas, datas, notas, link. |
-| Vários familiares | Gravação com concorrência optimista (ETag). Alterações em simultâneo não se perdem, e a lista actualiza ao voltar à página. |
+| Exportar | CSV para o Excel (separador `;`, BOM UTF-8): nome, pessoas, telefone, grupo, estado, pessoas confirmadas, datas (envio, abertura, toque em «Confirmar», resposta no convite), mensagem do convidado, notas, link. |
+| Vários familiares | Gravação com concorrência optimista (ETag). Alterações em simultâneo, da família ou dos convidados, não se perdem. A lista actualiza ao voltar à página e de 30 em 30 segundos. |
 
 Ainda não implementado: importar ficheiros CSV ou Excel, contactos do telemóvel, partilha nativa, lembretes e ligar ou desligar o link geral na interface.
 
@@ -161,17 +161,24 @@ Ainda não implementado: importar ficheiros CSV ou Excel, contactos do telemóve
 
 ## Confirmações
 
-Decisão actual, validada com o cliente: **a confirmação é feita pelo WhatsApp**, com a mensagem pré-escrita para o número da família.
+**Decisão actual ([0003](decisoes/0003-confirmacao-dentro-do-convite.md), implementada em `apps/web`):** no link pessoal, o convidado responde **dentro do convite**, e o WhatsApp abre no mesmo toque com a mensagem para a família. O WhatsApp continua no caminho porque é o canal preferido das famílias. Quem envia o aviso é sempre o convidado: o envio automático em nome da família exige a WhatsApp Business API ([01](01-produto.md#fora-para-já)).
 
-- O botão do convite aponta **directamente** para `wa.me`, para funcionar mesmo se a plataforma falhar e sem pedidos extra em redes lentas.
-- Ao tocar, o convite envia uma interacção `confirmar_tocado` por `navigator.sendBeacon` e o servidor actualiza `convidado.intencao_em`.
-- No painel, o anfitrião vê quem tocou em «Confirmar» e marca o estado: **confirmado** (com o número de pessoas) ou **recusado**. A mensagem que chega ao WhatsApp traz o nome e o número de pessoas, por isso a conferência é rápida.
-- **Fase 2 (a confirmar):** confirmação dentro do convite (vou / não vou, número de pessoas até ao limite do convite, mensagem opcional). Grava directamente o estado e oferece «Avisar também pelo WhatsApp». O WhatsApp continua como opção, porque é o canal preferido das famílias.
+- **Link pessoal, até ao prazo:**
+  - O convidado escolhe vou ou não vou («vamos» ou «não vamos» num convite para várias pessoas), quantas pessoas vão (de 1 até ao número do convite; por omissão, todas) e, se quiser, escreve uma mensagem para a família (até 300 caracteres). O que aparece no ecrã está no [02 §4.3](02-experiencia-do-convite.md#43-confirmação-de-presença).
+  - O botão redondo envia. Abre `wa.me` com a mensagem do que está escolhido (a de confirmação, com as pessoas, ou a de recusa, seguida da mensagem do convidado) e, no mesmo toque, grava a resposta com `fetch` (`keepalive`). Se a gravação falhar, o WhatsApp abre na mesma, e o convite pede ao convidado que envie a mensagem.
+  - A resposta muda o estado do convidado: **confirmado**, com as pessoas, ou **recusado**. Fica guardada com a data e a mensagem, e aparece logo na zona de gestão.
+  - Ao reabrir o link, o convite mostra a resposta registada (também a que a família marcou) e «Alterar resposta».
+- **Link pessoal, depois do prazo:** o formulário fecha.
+  - O prazo é o fim do dia de `confirmacao.ate` («1 de Maio de 2027») em Luanda. Se o texto não for uma data por extenso, ou for depois da festa, o prazo é o início da festa.
+  - O convite mostra a resposta registada, se houver, e os botões do WhatsApp, que registam o toque (`confirmar`) como antes. O servidor responde 410.
+- **Link geral e protótipo:** só o WhatsApp, como antes. Os botões apontam **directamente** para `wa.me`, para funcionar mesmo se a plataforma falhar e sem pedidos extra em redes lentas. No link geral, `{convidado}` passa a «[o seu nome]» e a família marca a resposta à mão.
+- **Pré-visualização** («Ver convite» na zona de gestão): mostra o formulário, mas não grava.
+- **Na zona de gestão**, a família vê «Respondeu no convite», a data e a mensagem. A resposta conta no resumo, nos filtros e na exportação. A família pode corrigi-la, e o cartão mostra o que o convidado respondeu.
 
 ### Painel do anfitrião
 
-- **Números:** convidados e pessoas convidadas, links enviados, abertos, tocaram em «Confirmar», confirmados (pessoas), recusados, pendentes.
-- **Lista** filtrável por estado e etiqueta, com a data da primeira abertura e do último toque em «Confirmar».
+- **Números:** convidados e pessoas convidadas, links enviados, abertos, responderam no convite, confirmados (pessoas), recusados, pendentes.
+- **Lista** filtrável por estado e etiqueta, com a data da primeira abertura e da última resposta no convite.
 - **Lembrete:** para os pendentes, abre o WhatsApp com uma mensagem de lembrete e o link pessoal.
 - **Exportar** CSV ou Excel (nome, pessoas, estado, pessoas confirmadas, etiqueta).
 
@@ -194,6 +201,7 @@ Decisão actual, validada com o cliente: **a confirmação é feita pelo WhatsAp
 | `GET /c/{slug}/img/{ficheiro}` · `GET /c/{slug}/{token}/img/{ficheiro}` | Foto da galeria do evento ([04 §8](04-modelo-de-dados.md#8-implementação-actual-appsweb)), com a regra de acesso do convite: pelo link geral só enquanto estiver activo, pelo pessoal só com token válido (não conta como abertura). Qualquer falha, incluindo nomes com pastas ou sem extensão de imagem, dá o mesmo 404 do convite. `Cache-Control: private` (nenhuma cache partilhada a guarda) e `ETag`. *(implementado)* |
 | `GET /temas/{tema}/og.jpg` | Imagem de partilha do tema, 1200 × 630 ([06](06-requisitos-nao-funcionais.md#seo-e-partilha)). *(implementado; uma imagem por evento, em `/c/{slug}/og.jpg`, fica para depois)* |
 | `POST /c/{slug}/{token}/i` | Interacções (`sendBeacon`, corpo `{"tipo": "aberto" \| "confirmar"}`). Uma vez por aparelho. Responde 204 mesmo com erro. *(implementado)* |
+| `POST /c/{slug}/{token}/resposta` | Resposta do convidado dentro do convite: `{"estado": "confirmado" \| "recusado", "pessoas"?, "mensagem"?}`. Tem o acesso do convite: um slug ou token desconhecido dá o mesmo 404. Responde 204 quando grava, 400 com dados inválidos, 410 depois do prazo e 429 com mais de 10 respostas numa hora no mesmo link. *(implementado)* |
 | `GET /gestao/{slug}` | Zona de gestão de convidados (PIN). *(implementado)* |
 
 Todas as respostas de `/c/` levam `X-Robots-Tag: noindex, nofollow`, e as páginas também `<meta name="robots" content="noindex, nofollow">`.
@@ -287,7 +295,7 @@ O protótipo aceitou compromissos por causa do alojamento estático. A plataform
 | 2 | Textos preenchidos por JavaScript (`data-t`) | HTML final gerado no servidor. | Por fazer |
 | 3 | Campos redundantes na configuração (`data.dia`, `calendario.inicioUTC`…) | Derivados de `evento.inicio` e do fuso ([04 §4](04-modelo-de-dados.md#4-campos-derivados)). | Por fazer (o validador garante a coerência) |
 | 4 | Textos fixos de 15 anos (`h1` «Convite para os 15 anos de…», «Mensagem da debutante», campo `debutante`) | Textos por tipo de evento. Campo `homenageado`. | Por fazer |
-| 5 | Marcadores da mensagem substituídos só na primeira ocorrência (`.replace`) | Substituir todas as ocorrências. | Feito na zona de gestão. Falta no convite |
+| 5 | Marcadores da mensagem substituídos só na primeira ocorrência (`.replace`) | Substituir todas as ocorrências. | Feito (zona de gestão e convite) |
 | 6 | Google Fonts | Fontes alojadas na plataforma, com pré-carregamento. | Por fazer |
 | 7 | Sem metadados Open Graph | `og:title`, `og:description`, `og:image` por evento. | Feito (imagem por tema: `temas/<tema>/og.jpg`) |
 | 8 | Sem JavaScript, o ecrã de abertura bloqueia a página | `<noscript>` e bloqueio só por script. | Parcial: o envelope já não bloqueia, mas os textos dependem de JS (linha 2) |

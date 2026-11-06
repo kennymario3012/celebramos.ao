@@ -4,16 +4,26 @@
  * O HTML só leva o convidado actual: nunca a lista de convidados.
  */
 import { ICONES, TEMPLATE } from "./gerado/recursos";
-import { dataLonga, escaparHtml } from "@/lib/texto";
-import type { ConfiguracaoConvite, ImagemTema } from "@/lib/tipos";
+import { dataLonga, escaparHtml, fimDoPrazo } from "@/lib/texto";
+import type { ConfiguracaoConvite, EstadoConfirmacao, ImagemTema } from "@/lib/tipos";
 
 export interface OpcoesRender {
   slug: string;
   /** Origem pública absoluta (para og:image). */
   origem: string;
-  convidado?: { token: string; nome: string; pessoas?: number } | null;
-  /** Falso na pré-visualização a partir da zona de gestão (não conta como abertura). */
+  convidado?: {
+    token: string;
+    nome: string;
+    pessoas?: number;
+    /** Resposta registada: estado, pessoas confirmadas e a mensagem da última resposta dada no convite. */
+    estado?: EstadoConfirmacao;
+    pessoasConfirmadas?: number;
+    mensagem?: string;
+  } | null;
+  /** Falso na pré-visualização a partir da zona de gestão (não conta como abertura nem grava respostas). */
   registar?: boolean;
+  /** Momento de referência para o prazo de confirmação (por omissão, agora). */
+  agora?: number;
 }
 
 /** JSON seguro dentro de <script>: sem «</script>», «<!--» nem separadores de linha Unicode. */
@@ -65,12 +75,25 @@ export function configuracaoParaConvidado(base: ConfiguracaoConvite, op: OpcoesR
   delete cfg.convidadoDemonstracao;
   cfg.calendario = { ...cfg.calendario, ics: `/c/${op.slug}/calendario.ics` };
   if (op.convidado) {
-    cfg.convidadoActual = { nome: op.convidado.nome, pessoas: op.convidado.pessoas };
-    if (op.registar !== false) cfg.registo = `/c/${op.slug}/${op.convidado.token}/i`;
+    const c = op.convidado;
+    const actual: NonNullable<ConfiguracaoConvite["convidadoActual"]> = { nome: c.nome, pessoas: c.pessoas };
+    if (c.estado === "confirmado" || c.estado === "recusado") {
+      actual.resposta = {
+        estado: c.estado,
+        ...(c.estado === "confirmado" ? { pessoas: c.pessoasConfirmadas ?? c.pessoas } : {}),
+        ...(c.mensagem ? { mensagem: c.mensagem } : {}),
+      };
+    }
+    cfg.convidadoActual = actual;
+    // confirmação dentro do convite: fecha no fim do prazo; na pré-visualização mostra-se, mas não grava
+    const aberto = (op.agora ?? Date.now()) < fimDoPrazo(base).getTime();
+    cfg.responder = !aberto ? { fechado: true } : op.registar !== false ? { caminho: `/c/${op.slug}/${c.token}/resposta` } : {};
+    if (op.registar !== false) cfg.registo = `/c/${op.slug}/${c.token}/i`;
     else delete cfg.registo;
   } else {
     delete cfg.convidadoActual;
     delete cfg.registo;
+    delete cfg.responder;
   }
   return cfg;
 }

@@ -20,6 +20,8 @@ interface Convidado {
   notas?: string;
   estado: Estado;
   pessoasConfirmadas?: number;
+  /** Última resposta dada pelo próprio convidado no convite. */
+  resposta?: { estado: "confirmado" | "recusado"; pessoas?: number; mensagem?: string; em: string };
   enviadoEm?: string;
   link: string;
   actividade: Actividade;
@@ -39,6 +41,7 @@ interface Dados {
     dataLonga: string;
     hora: string;
     prazoConfirmacao: string;
+    prazoTerminado?: boolean;
     linkGeral: string | null;
     cores: Cores;
   };
@@ -86,6 +89,16 @@ const preencher = (modelo: string, v: Record<string, string>) =>
   modelo.replace(/\{(\w+)\}/g, (inteiro, k: string) => (k in v ? v[k] : inteiro));
 
 const pessoasTxt = (n: number) => `${n} ${n === 1 ? "pessoa" : "pessoas"}`;
+
+/** O que o convidado respondeu no convite, visto pela família. */
+function respostaTxt(r: NonNullable<Convidado["resposta"]>) {
+  if (r.estado === "recusado") return "não vem";
+  return r.pessoas === 1 ? "vem 1 pessoa" : `vêm ${r.pessoas} pessoas`;
+}
+
+/** A família mudou o estado ou as pessoas depois da resposta dada no convite. */
+const alteradaPelaFamilia = (c: Convidado) =>
+  !!c.resposta && (c.estado !== c.resposta.estado || (c.estado === "confirmado" && (c.pessoasConfirmadas ?? c.pessoas) !== c.resposta.pessoas));
 
 function quando(iso?: string) {
   if (!iso) return "";
@@ -187,6 +200,13 @@ export default function Gestao({ slug }: { slug: string }) {
     document.addEventListener("visibilitychange", aoVoltar);
     return () => document.removeEventListener("visibilitychange", aoVoltar);
   }, [carregar, fase]);
+
+  // os convidados respondem no convite a qualquer momento: actualiza de 30 em 30 s enquanto a página está à vista
+  useEffect(() => {
+    if (fase !== "pronto" || dialogo || ocupado) return;
+    const id = setInterval(() => document.visibilityState === "visible" && carregar(true), 30_000);
+    return () => clearInterval(id);
+  }, [carregar, fase, dialogo, ocupado]);
 
   async function mudar(accao: () => Promise<unknown>, sucesso?: string) {
     setOcupado(true);
@@ -412,6 +432,7 @@ function Painel({ slug, dados, filtro, setFiltro, pesquisa, setPesquisa, abrir, 
           <h1>{evento.titulo}</h1>
           <p className="suave">
             {evento.dataLonga}, às {evento.hora} · confirmações até {evento.prazoConfirmacao}
+            {evento.prazoTerminado && " (prazo terminado)"}
           </p>
         </div>
         <button className="b b-discreto" onClick={sair}>Sair</button>
@@ -520,8 +541,13 @@ function Cartao({ slug, c, dados, abrir, mudar, mostrarAviso }: { slug: string; 
         <span className={c.actividade.aberturas ? "sinal on" : "sinal"}>
           {c.actividade.aberturas ? `Abriu ${quando(c.actividade.abertoEm)}` : "Não abriu"}
         </span>
+        {c.resposta && <span className="sinal on">Respondeu no convite {quando(c.resposta.em)}</span>}
         {c.actividade.confirmarEm && <span className="sinal on">Tocou em confirmar {quando(c.actividade.confirmarEm)}</span>}
       </div>
+      {c.resposta?.mensagem && <p className="c-mensagem">«{c.resposta.mensagem}»</p>}
+      {c.resposta && alteradaPelaFamilia(c) && (
+        <p className="c-notas">No convite: {respostaTxt(c.resposta)}. A família alterou depois.</p>
+      )}
 
       <div className="c-estado" role="group" aria-label={`Resposta de ${c.nome}`}>
         {([

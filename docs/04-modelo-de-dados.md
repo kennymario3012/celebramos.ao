@@ -58,10 +58,11 @@ Exemplos completos: [`prototipo/configs/exemplo-bela-principe.json`](../prototip
 
 | Campo | Tipo | Obrig. | Descrição |
 |---|---|---|---|
-| `confirmacao.ate` | texto | sim | Prazo por extenso («1 de Maio de 2027»). |
+| `confirmacao.ate` | texto | sim | Prazo por extenso («1 de Maio de 2027»), no máximo o dia da festa. *Na plataforma* é também o prazo aplicado: a resposta dentro do convite fecha no fim desse dia, em Luanda. |
 | `confirmacao.nota` | texto | sim | Nota por baixo dos botões. |
 | `confirmacao.botoes[]` | 1–2 × `{rotulo, telefone}` | sim | Um botão por número de WhatsApp. `telefone` em formato internacional sem `+` (ex.: `2449XXXXXXXX`). Vazio: modo de pré-visualização (aviso em vez de link). |
 | `confirmacao.mensagem` | modelo | sim | Mensagem pré-escrita (§3). |
+| `confirmacao.mensagemRecusa` | modelo | não | *Plataforma:* mensagem quando o convidado responde no convite que não vai (§3). Por omissão: «Olá! Lamento, mas não será possível estar presente no dia {dataCurta}.\nConvidado: {convidado}». |
 | `textos.confirmarLead` | texto | não | Frase antes do prazo. Por omissão: «Por favor, confirme a sua presença até». |
 | `textos.contagem` | texto | não | Texto da contagem regressiva. Por omissão: «para o grande dia». |
 
@@ -85,8 +86,9 @@ Exemplos completos: [`prototipo/configs/exemplo-bela-principe.json`](../prototip
 | `convidadoGenerico` | texto | sim | Nome no envelope do link geral («Família e Amigos»). |
 | `convidadoDemonstracao` | código | não | Convidado mostrado em modo demonstração. |
 | `convidados` | mapa `código → {nome, pessoas}` | sim | **Protótipo:** links `#código`. **Plataforma:** `{}`. **Nunca enviar a lista completa para o navegador.** |
-| `convidadoActual` | `{nome, pessoas}` | não | *Plataforma:* convidado do link pessoal, resolvido no servidor a partir do token. Tem prioridade sobre o `#código`. |
+| `convidadoActual` | `{nome, pessoas, resposta?}` | não | *Plataforma:* convidado do link pessoal, resolvido no servidor a partir do token. Tem prioridade sobre o `#código`. `resposta` é a resposta registada (`{estado, pessoas?, mensagem?}`, dada no convite ou marcada pela família), que o convite mostra e deixa alterar. |
 | `registo` | caminho | não | *Plataforma:* para onde o convite envia as interacções (`/c/{slug}/{token}/i`, por `sendBeacon`, uma vez por aparelho). Ausente na pré-visualização. |
+| `responder` | `{caminho?, fechado?}` | não | *Plataforma, só no link pessoal:* liga a confirmação dentro do convite ([05](05-plataforma.md#confirmações)). `caminho` é para onde se envia a resposta (`/c/{slug}/{token}/resposta`), ausente na pré-visualização. `fechado` é verdadeiro depois do prazo. Sem este campo (protótipo, link geral), a confirmação é só pelo WhatsApp. |
 
 Ícones válidos: ver [03](03-design-e-temas.md#ícones). Limites de tamanho de cada texto: ver o esquema.
 
@@ -115,9 +117,11 @@ Modelo com marcadores, substituídos **em todas as ocorrências**:
 | `{debutante}` | Nome curto do homenageado (na plataforma: `{homenageado}`; aceitar os dois) |
 | `{dataCurta}` | «15 de Maio» |
 | `{convidado}` | Nome do convidado. No link geral: «[o seu nome]» |
-| `{pessoas}` | « (3 pessoas)» / « (1 pessoa)». Vazio se não houver número |
+| `{pessoas}` | « (3 pessoas)» / « (1 pessoa)»: o número do convite ou, na resposta dentro do convite, as pessoas escolhidas. Vazio se não houver número |
 
 Modelo actual: `Olá! Confirmo a presença na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}{pessoas}`.
+Modelo de recusa (`mensagemRecusa`, plataforma): `Olá! Lamento, mas não será possível estar presente na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}`.
+Na resposta dentro do convite, a mensagem que o convidado escreveu vai no fim, depois de uma linha em branco.
 Link gerado: `https://wa.me/<telefone>?text=<mensagem codificada com encodeURIComponent>`.
 
 ## 4. Campos derivados
@@ -229,8 +233,9 @@ erDiagram
 | `enviado_em` | timestamptz | Marcado quando o anfitrião usa «Enviar pelo WhatsApp». |
 | `primeira_abertura_em`, `ultima_abertura_em`, `aberturas` | | A partir das interacções. |
 | `intencao_em` | timestamptz | Último toque em «Confirmar presença». |
-| `estado` | enum `pendente` · `confirmado` · `recusado` | O anfitrião altera no painel (ver [05](05-plataforma.md#confirmações)). |
+| `estado` | enum `pendente` · `confirmado` · `recusado` | O convidado responde no convite (link pessoal) e o anfitrião altera no painel (ver [05](05-plataforma.md#confirmações)). |
 | `pessoas_confirmadas` | inteiro | |
+| `resposta_estado`, `resposta_pessoas`, `resposta_mensagem`, `respondido_em` | | Última resposta dada pelo próprio convidado no convite. Se o anfitrião alterar o estado depois, estas colunas ficam como o convidado respondeu. `resposta_mensagem` tem até 300 caracteres. |
 | `revogado_em` | timestamptz | Link desactivado (responde 404). |
 
 ### interaccao
@@ -240,7 +245,7 @@ erDiagram
 | `id` | bigint | |
 | `evento_id` | → evento | |
 | `convidado_id` | → convidado, nulo | Nulo no link geral. |
-| `tipo` | enum | `pagina_aberta`, `envelope_aberto`, `confirmar_tocado`, `mapa_tocado`, `waze_tocado`, `calendario_tocado`, `galeria_aberta`, `musica_ligada` |
+| `tipo` | enum | `pagina_aberta`, `envelope_aberto`, `confirmar_tocado`, `resposta_enviada`, `mapa_tocado`, `waze_tocado`, `calendario_tocado`, `galeria_aberta`, `musica_ligada` |
 | `detalhe` | jsonb | Ex.: índice do botão ou do evento. |
 | `dispositivo` | enum `movel` · `computador` | Sem IP nem identificador do aparelho. |
 | `criado_em` | timestamptz | |
@@ -313,12 +318,12 @@ A primeira parte da plataforma ([decisões 0001](decisoes/0001-gestao-de-convida
 |---|---|---|
 | `eventos/{slug}/evento.json` | `evento` (+ `tema`) | `{configuracao, linkGeralActivo, gestao: {pin: {sal, hash}, mensagemEnvio?}}`. A `configuracao` segue o §1. |
 | `eventos/{slug}/img/{ficheiro}` | `ficheiro` (do evento) | Fotos da galeria, referidas em `galeria.fotos[].src` como `img/{ficheiro}`. `scripts/preparar-evento.mjs` grava-as em WebP (`foto-1.webp`, …), recodificadas e sem EXIF. Servidas com a regra de acesso do convite ([05](05-plataforma.md#rotas-públicas)). |
-| `eventos/{slug}/convidados.json` | `convidado` | `{versao: 1, mensagemEnvio?, convidados: [{token, nome, pessoas, telefone?, grupo?, notas?, estado, pessoasConfirmadas?, enviadoEm?, criadoEm, actualizadoEm}]}` |
-| `eventos/{slug}/actividade/{token}/{tipo}-{ms}-{aleatório}` | `interaccao` | Marcador vazio (`aberto` ou `confirmar`). O painel agrega pelos nomes (`list`), sem ler conteúdos. |
+| `eventos/{slug}/convidados.json` | `convidado` | `{versao: 1, mensagemEnvio?, convidados: [{token, nome, pessoas, telefone?, grupo?, notas?, estado, pessoasConfirmadas?, resposta?, enviadoEm?, criadoEm, actualizadoEm}]}`. `resposta` é a última resposta dada no convite: `{estado, pessoas?, mensagem?, em}`. |
+| `eventos/{slug}/actividade/{token}/{tipo}-{ms}-{aleatório}` | `interaccao` | Marcador vazio (`aberto`, `confirmar` ou `resposta`). O painel agrega `aberto` e `confirmar` pelos nomes (`list`), sem ler conteúdos. `resposta` serve para limitar as respostas a 10 por hora em cada link. |
 | `eventos/{slug}/seguranca.json` | — | Tentativas de PIN falhadas nos últimos 15 minutos. |
 | `sistema/segredo-sessao.json` | — | Segredo das sessões (se não houver `SEGREDO_SESSAO`). |
 
 - `convidados.json` é gravado com **concorrência optimista**: o ETag é o SHA-1 do conteúdo, e a gravação só acontece se ainda for o lido. Se houver conflito, repete com a versão nova (até 6 vezes). Comparar e gravar acontece sob um **bloqueio entre processos** (`<ficheiro>.bloqueio`, criado de forma atómica). A gravação faz-se num ficheiro temporário que depois muda de nome, por isso quem lê nunca vê um ficheiro a meio.
-- `estado` ∈ `pendente` · `confirmado` · `recusado`. `pessoasConfirmadas` só existe com `confirmado` (por omissão, `pessoas`).
+- `estado` ∈ `pendente` · `confirmado` · `recusado`. `pessoasConfirmadas` só existe com `confirmado` (por omissão, `pessoas`). A resposta dada no convite muda `estado` e `pessoasConfirmadas` (gravada como as alterações da família, com ETag e bloqueio) e guarda `resposta`.
 - `telefone` fica em formato internacional só com dígitos (`2449XXXXXXXX`). Um número angolano de 9 algarismos ganha o `244`.
 - Os eventos também podem vir da variável de ambiente `CELEBRAMOS_EVENTOS` (`{ "<slug>": evento }`). Os ficheiros têm prioridade.

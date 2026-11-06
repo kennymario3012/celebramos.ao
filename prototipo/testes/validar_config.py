@@ -17,6 +17,7 @@ from jsonschema import Draft202012Validator
 ROOT = Path(__file__).resolve().parent.parent
 ESQUEMA = ROOT.parent / "docs" / "esquemas" / "convite.schema.json"
 DIAS = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo"]
+MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 
 
 def regras_extra(cfg):
@@ -49,9 +50,21 @@ def regras_extra(cfg):
         erros.append("secção «presentes» na ordem mas `presentes` está vazio")
     if cfg.get("demonstracao") and cfg.get("convidadoDemonstracao") not in cfg["convidados"]:
         erros.append("demonstracao ligada mas convidadoDemonstracao não existe em `convidados`")
-    for m in re.findall(r"\{(\w+)\}", cfg["confirmacao"]["mensagem"]):
-        if m not in ("debutante", "dataCurta", "convidado", "pessoas"):
-            erros.append(f"confirmacao.mensagem: marcador desconhecido {{{m}}}")
+    for campo in ("mensagem", "mensagemRecusa"):
+        for m in re.findall(r"\{(\w+)\}", cfg["confirmacao"].get(campo, "")):
+            if m not in ("debutante", "homenageado", "dataCurta", "convidado", "pessoas"):
+                erros.append(f"confirmacao.{campo}: marcador desconhecido {{{m}}}")
+    # o prazo que o convidado lê é o que a plataforma aplica (fecha a resposta no convite no fim desse dia)
+    prazo = re.fullmatch(r"(\d{1,2}) de (\w+) de (\d{4})", cfg["confirmacao"]["ate"])
+    mes = MESES.index(prazo.group(2)) + 1 if prazo and prazo.group(2) in MESES else 0
+    try:
+        fim_prazo = datetime(int(prazo.group(3)), mes, int(prazo.group(1))).date() if mes else None
+    except ValueError:
+        fim_prazo = None
+    if not fim_prazo:
+        erros.append(f"confirmacao.ate: escrever a data por extenso, como «1 de Maio de 2027» (está «{cfg['confirmacao']['ate']}»)")
+    elif fim_prazo > inicio.date():
+        erros.append("confirmacao.ate: o prazo de confirmação é depois da festa")
     n = sum(len(col) for col in cfg["pais"])
     if n == 1 and cfg["convidam"].startswith("Têm"):
         erros.append("um só anfitrião: usar «Tem a honra de convidar»")

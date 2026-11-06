@@ -4,9 +4,9 @@ Este ficheiro é para agentes de código (Claude Code, Codex, Cursor, …) e par
 
 ## O projecto em 30 segundos
 
-**celebramos.ao** é uma plataforma de convites digitais para Angola. O convidado recebe um link pelo WhatsApp, abre um envelope animado e percorre o convite no telemóvel. Pode confirmar a presença pelo WhatsApp, abrir o local no mapa e guardar a data no calendário. O primeiro tipo de evento são as festas de 15 anos. A seguir vêm casamentos, aniversários e outros.
+**celebramos.ao** é uma plataforma de convites digitais para Angola. O convidado recebe um link pelo WhatsApp, abre um envelope animado e percorre o convite no telemóvel. Pode confirmar a presença no próprio convite (a mensagem segue pelo WhatsApp para a família), abrir o local no mapa e guardar a data no calendário. O primeiro tipo de evento são as festas de 15 anos. A seguir vêm casamentos, aniversários e outros.
 
-Estado actual: **especificação e protótipo de referência**, validados com um cliente real. A **primeira parte da plataforma** já existe em `apps/web`: o convite servido com links pessoais e a **zona de gestão de convidados** para a família, com acesso por PIN ([decisão 0001](docs/decisoes/0001-gestao-de-convidados-pela-familia.md)). O resto da plataforma está por construir segundo `docs/` (ver «Estado» no `docs/08`).
+Estado actual: **especificação e protótipo de referência**, validados com um cliente real. A **primeira parte da plataforma** já existe em `apps/web`: o convite servido com links pessoais e a **zona de gestão de convidados** para a família, com acesso por PIN ([decisão 0001](docs/decisoes/0001-gestao-de-convidados-pela-familia.md)). No link pessoal, o convidado responde dentro do convite ([decisão 0003](docs/decisoes/0003-confirmacao-dentro-do-convite.md)). O resto da plataforma está por construir segundo `docs/` (ver «Estado» no `docs/08`).
 
 ## Leitura obrigatória antes de qualquer tarefa
 
@@ -84,7 +84,7 @@ npm run semear         # eventos fictícios em .dados-locais/ (PIN 123456)
 npm run dev            # http://localhost:3000/gestao/exemplo-bela-principe
 npm run tipos
 npm run pacote         # build + pacote do cPanel em dist/celebramos-web (server.js)
-python3 testes/e2e.py  # 40 verificações, contra o pacote em 2 processos
+python3 testes/e2e.py  # 70 verificações, contra o pacote em 2 processos
 ```
 
 A plataforma fica alojada no **cPanel** do titular ([decisão 0002](docs/decisoes/0002-alojamento-no-cpanel.md)): Node.js com Passenger e dados em ficheiros fora da aplicação (`CELEBRAMOS_DADOS`). Nada de dependências que exijam serviços externos sem decisão do titular.

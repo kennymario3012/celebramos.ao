@@ -116,7 +116,8 @@
         "telefone": ""
       }
     ],
-    "mensagem": "Olá! Confirmo a presença na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}{pessoas}"
+    "mensagem": "Olá! Confirmo a presença na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}{pessoas}",
+    "mensagemRecusa": "Olá! Lamento, mas não será possível estar presente na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}"
   },
   "galeria": {
     "subtitulo": "Confira os meus pequenos momentos",

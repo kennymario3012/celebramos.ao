@@ -18,7 +18,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const html = renderizarConvite(evento.configuracao, {
     slug,
     origem: origemPublica(req),
-    convidado: { token: convidado.token, nome: convidado.nome, pessoas: convidado.pessoas },
+    convidado: {
+      token: convidado.token,
+      nome: convidado.nome,
+      pessoas: convidado.pessoas,
+      estado: convidado.estado,
+      pessoasConfirmadas: convidado.pessoasConfirmadas,
+      mensagem: convidado.resposta?.mensagem,
+    },
     registar: !previa,
   });
   return new Response(html, { headers: cabecalhosConvite("private, no-store") });
