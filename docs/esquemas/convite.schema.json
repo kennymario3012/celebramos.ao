@@ -188,6 +188,15 @@
     "musica": { "type": ["string", "null"], "description": "URL de um ficheiro de áudio (licenciado). `null`: sem botão de música." },
     "convidadoGenerico": { "type": "string", "minLength": 1, "maxLength": 60, "description": "Nome no envelope do link geral (ex.: «Família e Amigos»)." },
     "convidadoDemonstracao": { "type": "string", "description": "Código do convidado mostrado em modo demonstração." },
+    "convidadoActual": {
+      "type": "object", "additionalProperties": false, "required": ["nome"],
+      "description": "PLATAFORMA: convidado do link pessoal, resolvido no servidor a partir do token. Tem prioridade sobre o #código do protótipo.",
+      "properties": {
+        "nome": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "pessoas": { "type": "integer", "minimum": 1, "maximum": 30 }
+      }
+    },
+    "registo": { "type": "string", "pattern": "^/", "description": "PLATAFORMA: caminho para onde o convite envia as interacções (aberto, confirmar) por sendBeacon. Ausente no protótipo." },
     "convidados": {
       "type": "object",
       "description": "PROTÓTIPO: códigos dos links pessoais (#código). PLATAFORMA: apenas o convidado actual, resolvido no servidor a partir do token.",

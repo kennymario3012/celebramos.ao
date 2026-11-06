@@ -63,6 +63,8 @@ A plataforma **deve** gerar o CSS com uma ferramenta que conheça a lista de nav
 
 O convite expõe dados pessoais (nomes, datas, locais) e, em festas de 15 anos, dados de **menores**. Aplica-se a **Lei n.º 22/11, de 17 de Junho** (Lei da Protecção de Dados Pessoais), fiscalizada pela **Agência de Protecção de Dados (APD)** ([texto da lei](https://angolex.com/paginas/leis/lei-de-protecao-de-dados-pessoais.html)).
 
+> **Alojamento actual:** cPanel da Host2Africa ([decisão 0002](decisoes/0002-alojamento-no-cpanel.md)). Se o servidor estiver em Angola, os dados dos convidados não saem do país. Confirmar a localização com o fornecedor.
+>
 > **Antes do lançamento comercial, confirmar com um jurista:** a notificação ou o pedido de autorização à APD (art. 35.º). A transferência internacional de dados, se o alojamento ficar fora de Angola (arts. 33.º e 34.º). O papel da celebramos.ao: responsável pelo tratamento dos dados das contas e, provavelmente, subcontratante dos dados dos convidados, que são decididos pelo anfitrião. Os termos de serviço e a política de privacidade. A APD já aplicou multas por transferências internacionais sem autorização e por falta de notificação ([nota PLMJ, 2024](https://plmj.com/xms/files/03_Novidades_legislativas/2024/N_Colab_RVA-PLMJ_Dados_Pessoais_e_Ciber-seguranca_em_Angola.pdf)).
 
 Requisitos:
@@ -87,6 +89,7 @@ Requisitos:
 
 ## Segurança
 
+- **HTTPS:** certificado TLS válido no domínio (nunca auto-assinado: os navegadores e o WhatsApp mostram avisos). **Tem de** estar activo antes de enviar convites.
 - **Público:**
   - limite de pedidos nas rotas `/c/` e no envio de códigos de acesso;
   - respostas 404 iguais para slug e token inexistentes;
@@ -118,7 +121,7 @@ Requisitos:
   <meta property="og:type" content="website">
   <meta property="og:title" content="Convite · 15 Anos de Beatriz Almeida">
   <meta property="og:description" content="Sábado, 15 de Maio de 2027 · Toque para abrir o convite">
-  <meta property="og:image" content="https://celebramos.ao/c/beatriz-15-anos/og.jpg">
+  <meta property="og:image" content="https://celebramos.ao/temas/bela-principe/og.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">

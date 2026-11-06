@@ -4,6 +4,8 @@ O que se constrói à volta do convite: criar, rever, publicar, enviar e acompan
 
 > Tudo o que está marcado **«a confirmar»** é uma proposta. Antes de implementar, confirmar com o titular do projecto (ver [08](08-roadmap.md#decisões-em-aberto)).
 
+> **Estado (Novembro de 2026):** a primeira parte da plataforma está em [`apps/web`](../apps/web/). Tem o convite servido com links pessoais (token no caminho) e a **zona de gestão de convidados** para a família, com acesso por PIN ([decisão 0001](decisoes/0001-gestao-de-convidados-pela-familia.md)). Fica alojada no **cPanel** do titular ([decisão 0002](decisoes/0002-alojamento-no-cpanel.md)). O resto deste documento continua a ser o alvo.
+
 ## Módulos
 
 ```mermaid
@@ -80,6 +82,11 @@ stateDiagram-v2
 - **Anfitriões:** entrada com o número de telemóvel e um código de uso único enviado por SMS ou WhatsApp. Alternativa: email com link mágico. Sem palavras-passe. Sessão de 30 dias em cookie `HttpOnly`, `Secure`, `SameSite=Lax`.
 - **Operadores e administradores:** email e segundo factor (TOTP) obrigatório.
 - **Revisores na fase 1:** sem conta. O link de pré-visualização (`token_previa`) é o acesso, e pode ser renovado para cortar o acesso.
+- **Família, implementado:** a zona de gestão de convidados usa um **PIN por evento** (6 algarismos) em vez de contas.
+  - Hash scrypt e sessão de 30 dias em cookie assinado (HMAC).
+  - Mudar o PIN termina as sessões.
+  - Ao fim de 10 tentativas erradas, o acesso bloqueia durante 15 minutos.
+  - É uma solução transitória: as contas com código por telemóvel (E5-S5) substituem-na.
 
 ## Back-office do operador (MVP)
 
@@ -103,6 +110,30 @@ Objectivo: montar e alterar um convite sem tocar em código. Meta: ≤ 2 horas p
 - Link `/c/{slug}/previa/{token_previa}`: modo demonstração, com um convidado de exemplo ou o primeiro convidado da lista. Faixa discreta «Pré-visualização» e `noindex`.
 - O anfitrião pode **aprovar** ou **pedir alterações** num botão fixo da pré-visualização.
 - **Fase 2:** comentários presos a uma secção (o revisor toca numa secção e escreve). Hoje isto acontece no WhatsApp, com capturas de ecrã assinaladas.
+
+## Zona de gestão de convidados
+
+**Implementada** em `apps/web` (`/gestao/{slug}`). É o sítio onde a família cadastra e acompanha os convidados, no telemóvel ou no computador.
+
+![Lista de convidados](img/gestao-03-lista.webp) ![Adicionar convidado](img/gestao-02-adicionar.webp)
+
+| Função | Comportamento |
+|---|---|
+| Entrar | PIN do evento. O ecrã de entrada só mostra o nome do evento. |
+| Resumo | Convites e pessoas convidadas, enviados, abriram, pessoas que vêm, não vêm, sem resposta. |
+| Adicionar convidado | Nome como aparece no envelope, pessoas (1–30), WhatsApp (opcional, normalizado para `244…`), grupo, notas. Avisa se o nome já existir. Tem «Gravar e adicionar outro». |
+| Colar lista | Um convidado por linha (`nome; pessoas; telefone; grupo`). Mostra a pré-visualização com as linhas inválidas assinaladas antes de importar. |
+| Enviar pelo WhatsApp | Abre `wa.me` com a mensagem e o link pessoal e marca «Enviado». A mensagem é editável, com `{convidado}`, `{homenageado}`, `{dataCurta}`, `{hora}`, `{pessoas}` e `{link}` (obrigatório). |
+| Copiar link, Ver convite | «Ver convite» abre com `?previa=1`, que não conta como abertura. |
+| Resposta | Sem resposta, Vem (com o número de pessoas que vêm) ou Não vem. |
+| Sinais por convidado | «Enviado», «Abriu» (primeira abertura) e «Tocou em confirmar», com data e hora de Luanda. |
+| Filtros e pesquisa | Por enviar, enviados, abriram, não abriram, vêm, não vêm, sem resposta. Pesquisa sem acentos. |
+| Link novo | Gera outro token: o link anterior deixa de funcionar (enviado à pessoa errada). |
+| Apagar | Retira o convidado. O link deixa de funcionar. |
+| Exportar | CSV para o Excel (separador `;`, BOM UTF-8): nome, pessoas, telefone, grupo, estado, pessoas confirmadas, datas, notas, link. |
+| Vários familiares | Gravação com concorrência optimista (ETag). Alterações em simultâneo não se perdem, e a lista actualiza ao voltar à página. |
+
+Ainda não implementado: importar ficheiros CSV ou Excel, contactos do telemóvel, partilha nativa, lembretes e ligar ou desligar o link geral na interface.
 
 ## Convidados
 
@@ -160,14 +191,27 @@ Decisão actual, validada com o cliente: **a confirmação é feita pelo WhatsAp
 | `GET /c/{slug}/{token}` | Convite pessoal. Token desconhecido ou revogado: 404 (mesma página que um slug inexistente, para não revelar nada). |
 | `GET /c/{slug}/previa/{token_previa}` | Pré-visualização (modo demonstração). |
 | `GET /c/{slug}/calendario.ics` | Ficheiro de calendário ([04 §6](04-modelo-de-dados.md#6-ficheiro-de-calendário-ics)). |
-| `GET /c/{slug}/og.jpg` | Imagem de partilha 1200 × 630 ([06](06-requisitos-nao-funcionais.md#seo-e-partilha)). |
-| `POST /c/{slug}/i` | Interacções (`sendBeacon`, corpo `{token?, tipo, detalhe}`), com limite de pedidos. Responde 204 mesmo com erro. |
+| `GET /temas/{tema}/og.jpg` | Imagem de partilha do tema, 1200 × 630 ([06](06-requisitos-nao-funcionais.md#seo-e-partilha)). *(implementado; uma imagem por evento, em `/c/{slug}/og.jpg`, fica para depois)* |
+| `POST /c/{slug}/{token}/i` | Interacções (`sendBeacon`, corpo `{"tipo": "aberto" \| "confirmar"}`). Uma vez por aparelho. Responde 204 mesmo com erro. *(implementado)* |
+| `GET /gestao/{slug}` | Zona de gestão de convidados (PIN). *(implementado)* |
 
 Todas as respostas de `/c/` levam `X-Robots-Tag: noindex, nofollow`, e as páginas também `<meta name="robots" content="noindex, nofollow">`.
 
 ## API interna (indicativa)
 
-Sugestão de recursos para o painel e o back-office. Se a stack o favorecer, usar *server actions* ou RPC tipado.
+**Implementado** (zona de gestão, todos com sessão e, nas alterações, o cabeçalho `X-Celebramos: 1`):
+
+| Método e rota | Função |
+|---|---|
+| `POST /api/gestao/{slug}/entrar` · `/sair` | Entrar com `{pin}` (cookie de sessão) e sair |
+| `GET /api/gestao/{slug}/dados` | Evento, mensagem de envio e convidados com o link e a actividade |
+| `POST /api/gestao/{slug}/convidados` | Cadastrar |
+| `POST /api/gestao/{slug}/convidados/importar` | `{texto}` dá a pré-visualização. `{texto, confirmar: true}` grava |
+| `PATCH/DELETE /api/gestao/{slug}/convidados/{token}` | Alterar (dados, `estado`, `pessoasConfirmadas`, `enviado`, `novoLink`) ou apagar |
+| `PUT /api/gestao/{slug}/mensagem` | Mensagem do WhatsApp |
+| `GET /api/gestao/{slug}/exportar` | CSV |
+
+Sugestão para o resto (painel completo e back-office). Se a stack o favorecer, usar *server actions* ou RPC tipado.
 
 | Método e rota | Função |
 |---|---|
@@ -197,11 +241,23 @@ prototipo/           referência (este repositório); a arte procedural continua
 | Linguagem | TypeScript | |
 | Web | Next.js | Painel e back-office em React. O **convite não usa React no cliente** (ver abaixo). |
 | Base de dados | Postgres gerido + ORM com migrações (Drizzle ou Prisma) | `conteudo` e `configuracao` em `jsonb` |
-| Ficheiros | Armazenamento compatível com S3 + CDN | Variantes AVIF/WebP geradas no envio (sharp) |
-| Alojamento | Vercel ou equivalente | Escolher a região com menor latência para Luanda e verificar as regras de transferência internacional ([06](06-requisitos-nao-funcionais.md#privacidade-e-protecção-de-dados)) |
+| Ficheiros | Armazenamento compatível com S3 + CDN (proposta). Hoje são ficheiros no servidor | Variantes AVIF/WebP geradas no envio (sharp) |
+| Alojamento | **Decidido: cPanel do titular** ([0002](decisoes/0002-alojamento-no-cpanel.md)). A proposta original era Vercel ou equivalente | Verificar onde fica o servidor e as regras de transferência internacional ([06](06-requisitos-nao-funcionais.md#privacidade-e-protecção-de-dados)) |
 | Testes | Playwright (aceitação, porta de `verificar.py`), Vitest, axe-core, Lighthouse CI | Ver [07](07-criterios-de-aceitacao.md) |
 | CI | GitHub Actions | O protótipo já tem um fluxo (`.github/workflows/prototipo.yml`) |
 | Erros | Serviço de monitorização de erros (ex.: Sentry) | Sem dados pessoais nos eventos |
+
+### Implementação actual
+
+| Peça | Em uso |
+|---|---|
+| Alojamento | cPanel do titular (Host2Africa), **Setup Node.js App** (Passenger, Node.js 24), domínio `celebramos.ao` ([decisão 0002](decisoes/0002-alojamento-no-cpanel.md)). |
+| Aplicação | Next.js 16 em `apps/web` (ainda sem `packages/`), em modo `standalone`. O ficheiro de arranque é `server.js` e o renderizador está em `src/convite/`. |
+| Template do convite | O do protótipo, copiado na construção (`scripts/sincronizar-prototipo.mjs`). |
+| Dados | Ficheiros JSON em `CELEBRAMOS_DADOS`, fora da aplicação, com escrita condicional por ETag e bloqueio entre processos. |
+| Eventos | `CELEBRAMOS_DADOS/eventos/{slug}/evento.json`, ou a variável `CELEBRAMOS_EVENTOS`. São preparados com `scripts/preparar-evento.mjs`. |
+| Construção e publicação | O CI constrói e testa o pacote (artefacto `celebramos-web`), que se envia para o cPanel. Nada é construído no servidor. |
+| Testes | `apps/web/testes/e2e.py` (Playwright), contra o próprio pacote em 2 processos, no CI (`.github/workflows/plataforma.yml`). |
 
 ### O renderizador do convite
 
@@ -214,7 +270,7 @@ prototipo/           referência (este repositório); a arte procedural continua
 
 ### Imagem de partilha (Open Graph)
 
-Gerada ao publicar (1200 × 630, JPEG, ≤ 300 KB): fundo e arte do tema, nome do homenageado, tipo de evento e data. **Sem fotografias** em eventos de menores e **sem o nome do convidado**.
+Hoje há **uma por tema** (`temas/<tema>/og.jpg`, gerada por `prototipo/arte/gerar_og.py`), sem texto: o nome do evento vai no `og:title`. Alvo: gerada ao publicar (1200 × 630, JPEG, ≤ 300 KB), com fundo e arte do tema, nome do homenageado, tipo de evento e data. **Sem fotografias** em eventos de menores e **sem o nome do convidado**.
 
 ### Tarefas em segundo plano
 
@@ -222,18 +278,18 @@ Variantes de imagens, imagem de partilha, retenção de dados (apagar ou arquiva
 
 ## Do protótipo à plataforma
 
-O protótipo aceitou compromissos por causa do alojamento estático. A plataforma **tem de** corrigi-los:
+O protótipo aceitou compromissos por causa do alojamento estático. A plataforma **tem de** corrigi-los. Estado em `apps/web`:
 
-| # | No protótipo | Na plataforma |
-|---|---|---|
-| 1 | Link pessoal por `#código`, com a **lista completa de convidados no HTML** | Token no caminho (`/c/{slug}/{token}`). Só o convidado actual é enviado ao navegador. |
-| 2 | Textos preenchidos por JavaScript (`data-t`) | HTML final gerado no servidor. |
-| 3 | Campos redundantes na configuração (`data.dia`, `calendario.inicioUTC`…) | Derivados de `evento.inicio` e do fuso ([04 §4](04-modelo-de-dados.md#4-campos-derivados)). |
-| 4 | Textos fixos de 15 anos (`h1` «Convite para os 15 anos de…», «Mensagem da debutante», campo `debutante`) | Textos por tipo de evento. Campo `homenageado`. |
-| 5 | Marcadores da mensagem substituídos só na primeira ocorrência (`.replace`) | Substituir todas as ocorrências. |
-| 6 | Google Fonts | Fontes alojadas na plataforma, com pré-carregamento. |
-| 7 | Sem metadados Open Graph | `og:title`, `og:description`, `og:image` por evento. |
-| 8 | Sem JavaScript, o ecrã de abertura bloqueia a página | `<noscript>` e bloqueio só por script. |
-| 9 | Ícones num JSON embutido | Só os ícones usados, embutidos no servidor. |
-| 10 | Decoração escrita à mão por secção | Calculada a partir da ordem (regras do [02 §7](02-experiencia-do-convite.md#7-harmonia-entre-secções)). |
-| 11 | Calendário sem `.ics` no alojamento de demonstração (downloads bloqueados) | `.ics` servido pela plataforma. |
+| # | No protótipo | Na plataforma | Estado |
+|---|---|---|---|
+| 1 | Link pessoal por `#código`, com a **lista completa de convidados no HTML** | Token no caminho (`/c/{slug}/{token}`). Só o convidado actual é enviado ao navegador (`convidadoActual`). | Feito |
+| 2 | Textos preenchidos por JavaScript (`data-t`) | HTML final gerado no servidor. | Por fazer |
+| 3 | Campos redundantes na configuração (`data.dia`, `calendario.inicioUTC`…) | Derivados de `evento.inicio` e do fuso ([04 §4](04-modelo-de-dados.md#4-campos-derivados)). | Por fazer (o validador garante a coerência) |
+| 4 | Textos fixos de 15 anos (`h1` «Convite para os 15 anos de…», «Mensagem da debutante», campo `debutante`) | Textos por tipo de evento. Campo `homenageado`. | Por fazer |
+| 5 | Marcadores da mensagem substituídos só na primeira ocorrência (`.replace`) | Substituir todas as ocorrências. | Feito na zona de gestão. Falta no convite |
+| 6 | Google Fonts | Fontes alojadas na plataforma, com pré-carregamento. | Por fazer |
+| 7 | Sem metadados Open Graph | `og:title`, `og:description`, `og:image` por evento. | Feito (imagem por tema: `temas/<tema>/og.jpg`) |
+| 8 | Sem JavaScript, o ecrã de abertura bloqueia a página | `<noscript>` e bloqueio só por script. | Parcial: o envelope já não bloqueia, mas os textos dependem de JS (linha 2) |
+| 9 | Ícones num JSON embutido | Só os ícones usados, embutidos no servidor. | Por fazer |
+| 10 | Decoração escrita à mão por secção | Calculada a partir da ordem (regras do [02 §7](02-experiencia-do-convite.md#7-harmonia-entre-secções)). | Por fazer |
+| 11 | Calendário sem `.ics` no alojamento de demonstração (downloads bloqueados) | `.ics` servido pela plataforma. | Feito (`/c/{slug}/calendario.ics`) |

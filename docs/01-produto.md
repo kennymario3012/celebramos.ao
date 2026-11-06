@@ -17,7 +17,7 @@ Para o anfitrião, o convite tem de ser **bonito, rápido de aprovar e fácil de
 
 | Persona | Quem é | O que precisa |
 |---|---|---|
-| **Anfitrião** | Pais da debutante, noivos, aniversariante. Decide e aprova. | Ver o convite antes de enviar e pedir alterações sem complicação. Enviar a cada convidado o seu link. Saber quantas pessoas vêm. |
+| **Anfitrião** | Pais da debutante, noivos, aniversariante. Decide e aprova. | Ver o convite antes de enviar e pedir alterações sem complicação. **Cadastrar os convidados ele próprio** e enviar a cada um o seu link. Saber quantas pessoas vêm. |
 | **Convidado** | Família e amigos, de todas as idades. Abre o link no WhatsApp. | Perceber logo quando e onde é. Chegar lá (mapa). Confirmar sem preencher formulários. Lembrar-se da data (calendário). |
 | **Operador** | Equipa celebramos.ao que monta o convite para o cliente (modelo «feito por nós»). | Montar um convite novo em pouco tempo, sem tocar em código. Aplicar alterações pedidas por áudio ou captura de ecrã. Publicar com segurança. |
 | **Designer de temas** | Cria temas (cores, tipografia, arte). | Criar arte original reutilizável e verificar o contraste e a harmonia entre secções. |
@@ -42,7 +42,7 @@ Para o anfitrião, o convite tem de ser **bonito, rápido de aprovar e fácil de
 - Convite com a experiência completa do [02](02-experiencia-do-convite.md): envelope, secções, personalização, confirmação por WhatsApp, mapas, calendário, contagem regressiva e computador.
 - Temas configuráveis (tokens de cor e arte) e ordem de secções configurável.
 - Back-office do operador para criar, editar, pré-visualizar e publicar convites.
-- Lista de convidados com links pessoais, envio pelo WhatsApp e painel de aberturas e confirmações.
+- **Zona de gestão de convidados para a família** (acesso por PIN, sem conta): cadastrar convidados um a um ou colando uma lista, links pessoais, envio pelo WhatsApp, aberturas, confirmações e exportação. **Já implementada** em [`apps/web`](../apps/web/) (ver [05](05-plataforma.md#zona-de-gestão-de-convidados)).
 - Tipos de evento: 15 anos. A estrutura tem de estar preparada para casamentos e aniversários.
 
 ### Fora (para já)
@@ -59,7 +59,7 @@ Para o anfitrião, o convite tem de ser **bonito, rápido de aprovar e fácil de
 2. **Primeira versão:** o operador publica um link de pré-visualização no mesmo dia.
 3. **Revisões:** a família responde pelo WhatsApp com textos, áudios e capturas de ecrã assinaladas. Houve **6 rondas** de alterações em uma semana (ver «Decisões validadas»).
 4. **Aprovação** e decisão sobre o envio: link geral ou links pessoais.
-5. **Envio** aos convidados pelo WhatsApp.
+5. **Cadastro e envio:** a família cadastra os convidados na zona de gestão e envia cada link pessoal pelo WhatsApp.
 6. **Confirmações** chegam ao WhatsApp da família.
 7. **Dia do evento:** o convite continua acessível (mapa, programa).
 
@@ -79,8 +79,8 @@ Decisões tomadas com o primeiro cliente real (festa de 15 anos, Novembro de 202
 | 8 | **Ligações entre secções harmonizadas** (cortes visíveis entre secções). | Regras de harmonia entre secções (ver [02 §7](02-experiencia-do-convite.md#7-harmonia-entre-secções)). |
 | 9 | **A festa começa às 17h.** O local foi enviado como pin do Google Maps. | Os eventos aceitam coordenadas. Os botões do Google Maps e do Waze usam as coordenadas. |
 | 10 | **Confirmação para um número de WhatsApp da família.** | Um ou dois botões de confirmação por convite, cada um com o seu número. |
-| 11 | **Horário e local do culto ainda por definir** no momento da aprovação. | Um evento pode estar «a confirmar»: o texto aparece sem botões de mapa. |
-| 12 | **«E a lista de convidados tem de se enviar?»** | Funcionam as duas formas. **Link geral** sem lista, com o envelope «Convite para Família e Amigos». **Links pessoais** com lista (nome e número de pessoas), importada de forma simples (colar texto ou Excel). |
+| 11 | **Horário e local do culto ainda por definir** no momento da aprovação. No fim, **não houve culto**. | Um evento pode estar «a confirmar»: o texto aparece sem botões de mapa. O convite tem de funcionar com um só evento (só a festa). |
+| 12 | **«E a lista de convidados tem de se enviar?»** A resposta foi que a família cadastra os convidados ela própria. | **Zona de gestão de convidados para a família**, com acesso por PIN e sem conta ([decisão 0001](decisoes/0001-gestao-de-convidados-pela-familia.md)). Cada convidado cadastrado tem um **link pessoal** (nome e número de pessoas). O **link geral** («Convite para Família e Amigos») continua disponível para grupos. |
 
 ## Métricas de sucesso
 

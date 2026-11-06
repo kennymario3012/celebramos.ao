@@ -12,6 +12,33 @@
 | **M4 · Self-service** | E7 | O anfitrião cria e paga sozinho. |
 | **M5 · Mais celebrações** | E9, E10 | Casamentos, aniversários, baptizados e extras. |
 
+## Estado
+
+Actualizado em Novembro de 2026. A pedido do primeiro cliente real, a **zona de gestão de convidados** para a família (marco M3) passou à frente ([decisão 0001](decisoes/0001-gestao-de-convidados-pela-familia.md)). Está em `apps/web`.
+
+| História | Estado | Notas |
+|---|---|---|
+| E0-S2 | Feito | CI do protótipo e da plataforma |
+| E1-S3 | Feito | `/c/{slug}` e `/c/{slug}/{token}`, 404 igual para slug e token |
+| E1-S6 | Feito | `.ics` servido. Imagem de partilha por tema (`og.jpg`) |
+| E4-S1 | Feito | Sem conta. Avisa quando o nome se repete |
+| E4-S2 | Parcial | Colar texto: feito. Importar ficheiro CSV ou Excel: por fazer |
+| E4-S3 | Parcial | Link novo e apagar: feito. Ligar e desligar o link geral só na configuração |
+| E4-S4 | Parcial | WhatsApp e copiar: feito. Partilha nativa: por fazer |
+| E5-S1 | Feito | «aberto» e «confirmar» por `sendBeacon`, uma vez por aparelho |
+| E5-S2 | Feito | Resumo, lista, filtros, pesquisa, respostas com número de pessoas |
+| E5-S4 | Parcial | CSV para o Excel. Ficheiro `.xlsx`: por fazer |
+| E5-S5 | Parcial | PIN por evento em vez de contas e papéis |
+
+Próximos passos sugeridos:
+
+1. **Pôr no ar no cPanel**: certificado TLS válido e primeira publicação, como em `apps/web/README.md`.
+2. Publicação automática por SSH a partir do CI (E0-S3).
+3. E3 (back-office, para não editar JSON à mão).
+4. E1-S2 (textos no servidor).
+5. E8-S4 (parecer jurídico).
+6. E5-S3 (lembretes).
+
 ## E0 · Fundações
 
 | ID | História | Feito quando |
@@ -121,9 +148,9 @@ Para o titular do projecto decidir. Quando uma decisão for tomada, registá-la 
 
 | # | Decisão | Opções | Proposta | Bloqueia |
 |---|---|---|---|---|
-| D1 | Stack | Next.js + Postgres + S3 / outra | A do [05](05-plataforma.md#arquitectura-proposta) | E0 |
-| D2 | Alojamento e região | Europa, África do Sul, Angola | Medir a latência a partir de Luanda e decidir com o parecer da E8-S4 | E0-S3, E8-S4 |
-| D3 | Entrada dos anfitriões | Código por SMS, por WhatsApp, email | Código por telemóvel, com email como alternativa | E5-S5 |
+| D1 | Stack | Next.js + Postgres + S3 / outra | A do [05](05-plataforma.md#arquitectura-proposta). **Em uso em `apps/web`:** Next.js com ficheiros JSON no servidor em vez de Postgres (decisões 0001 e 0002). Confirmar quando houver vários eventos em simultâneo | E0 |
+| D2 | Alojamento e região | Europa, África do Sul, Angola | **Decidido:** cPanel do titular, Host2Africa ([decisão 0002](decisoes/0002-alojamento-no-cpanel.md)). Confirmar com o fornecedor que o servidor está em Angola | E8-S4 |
+| D3 | Entrada dos anfitriões | Código por SMS, por WhatsApp, email | **Decidido para já:** PIN por evento para a família (decisão 0001). Depois, código por telemóvel com email como alternativa | E5-S5 |
 | D4 | Confirmação | Só WhatsApp / formulário no convite + WhatsApp | WhatsApp no MVP, formulário na fase 2 | E5, E10 |
 | D5 | Retenção dos dados dos convidados | 30, 90 ou 180 dias depois do evento | 90 dias | E8-S2 |
 | D6 | Preços e pagamentos | Por convite, por pacote. Meios e fornecedor | — | E7-S3 |

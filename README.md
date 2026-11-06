@@ -12,7 +12,8 @@
 
 - ✅ **Experiência do convite** especificada e implementada num **protótipo de referência**, validado com um cliente real (festa de 15 anos, Novembro de 2026).
 - ✅ **Especificação da plataforma**: produto, modelo de dados, plataforma, requisitos, critérios de aceitação e roadmap.
-- ⬜ **Plataforma** (back-office, convidados, confirmações, self-service): por construir. Começa pelo marco M1 do [roadmap](docs/08-roadmap.md).
+- ✅ **Primeira parte da plataforma** ([`apps/web`](apps/web/)): o convite servido com links pessoais e a **zona de gestão de convidados**. Nela, a família entra com um PIN, cadastra os convidados, envia cada link pelo WhatsApp e acompanha quem abriu e quem vem. Fica alojada no cPanel de `celebramos.ao`.
+- ⬜ **Resto da plataforma** (back-office do operador, contas, self-service, pagamentos): por construir. Ver o «Estado» no [roadmap](docs/08-roadmap.md#estado).
 
 ## Para quem desenvolve
 
@@ -40,8 +41,9 @@ python3 -m http.server -d exemplos/exemplo-bela-principe 8080   # http://localho
 ## Repositório
 
 ```
-docs/        especificação, esquema JSON da configuração do convite, capturas de referência
+docs/        especificação, decisões, esquema JSON da configuração do convite, capturas de referência
 prototipo/   convite de referência (HTML/CSS/JS), construção, testes de aceitação, arte procedural
+apps/web/    plataforma (Next.js): convite com links pessoais e zona de gestão de convidados
 ```
 
 ## Licenças

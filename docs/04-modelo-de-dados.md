@@ -84,7 +84,9 @@ Exemplos completos: [`prototipo/configs/exemplo-bela-principe.json`](../prototip
 |---|---|---|---|
 | `convidadoGenerico` | texto | sim | Nome no envelope do link geral («Família e Amigos»). |
 | `convidadoDemonstracao` | código | não | Convidado mostrado em modo demonstração. |
-| `convidados` | mapa `código → {nome, pessoas}` | sim | **Protótipo:** links `#código`. **Plataforma:** só o convidado actual (ou `{}` no link geral), resolvido no servidor a partir do token. **Nunca enviar a lista completa para o navegador.** |
+| `convidados` | mapa `código → {nome, pessoas}` | sim | **Protótipo:** links `#código`. **Plataforma:** `{}`. **Nunca enviar a lista completa para o navegador.** |
+| `convidadoActual` | `{nome, pessoas}` | não | *Plataforma:* convidado do link pessoal, resolvido no servidor a partir do token. Tem prioridade sobre o `#código`. |
+| `registo` | caminho | não | *Plataforma:* para onde o convite envia as interacções (`/c/{slug}/{token}/i`, por `sendBeacon`, uma vez por aparelho). Ausente na pré-visualização. |
 
 Ícones válidos: ver [03](03-design-e-temas.md#ícones). Limites de tamanho de cada texto: ver o esquema.
 
@@ -300,3 +302,22 @@ END:VCALENDAR
 | `token_previa` | idem | Separado dos tokens dos convidados. Renovável. |
 
 Rotas públicas: ver [05](05-plataforma.md#rotas-públicas).
+
+---
+
+## 8. Implementação actual (apps/web)
+
+A primeira parte da plataforma ([decisões 0001](decisoes/0001-gestao-de-convidados-pela-familia.md) e [0002](decisoes/0002-alojamento-no-cpanel.md)) usa um modelo simplificado, guardado como **ficheiros JSON** na pasta `CELEBRAMOS_DADOS` do servidor, fora da aplicação. Equivale a um subconjunto do §5: ainda não há `utilizador`, `membro_evento` nem `versao`.
+
+| Caminho (dentro de `CELEBRAMOS_DADOS`) | Corresponde a | Conteúdo |
+|---|---|---|
+| `eventos/{slug}/evento.json` | `evento` (+ `tema`) | `{configuracao, linkGeralActivo, gestao: {pin: {sal, hash}, mensagemEnvio?}}`. A `configuracao` segue o §1. |
+| `eventos/{slug}/convidados.json` | `convidado` | `{versao: 1, mensagemEnvio?, convidados: [{token, nome, pessoas, telefone?, grupo?, notas?, estado, pessoasConfirmadas?, enviadoEm?, criadoEm, actualizadoEm}]}` |
+| `eventos/{slug}/actividade/{token}/{tipo}-{ms}-{aleatório}` | `interaccao` | Marcador vazio (`aberto` ou `confirmar`). O painel agrega pelos nomes (`list`), sem ler conteúdos. |
+| `eventos/{slug}/seguranca.json` | — | Tentativas de PIN falhadas nos últimos 15 minutos. |
+| `sistema/segredo-sessao.json` | — | Segredo das sessões (se não houver `SEGREDO_SESSAO`). |
+
+- `convidados.json` é gravado com **concorrência optimista**: o ETag é o SHA-1 do conteúdo, e a gravação só acontece se ainda for o lido. Se houver conflito, repete com a versão nova (até 6 vezes). Comparar e gravar acontece sob um **bloqueio entre processos** (`<ficheiro>.bloqueio`, criado de forma atómica). A gravação faz-se num ficheiro temporário que depois muda de nome, por isso quem lê nunca vê um ficheiro a meio.
+- `estado` ∈ `pendente` · `confirmado` · `recusado`. `pessoasConfirmadas` só existe com `confirmado` (por omissão, `pessoas`).
+- `telefone` fica em formato internacional só com dígitos (`2449XXXXXXXX`). Um número angolano de 9 algarismos ganha o `244`.
+- Os eventos também podem vir da variável de ambiente `CELEBRAMOS_EVENTOS` (`{ "<slug>": evento }`). Os ficheiros têm prioridade.

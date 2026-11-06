@@ -47,6 +47,14 @@ Todas as fontes estão sob a [SIL Open Font License 1.1](https://openfontlicense
 | Cinzel | Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel) | Pipeline de arte: o «15» dourado das ilustrações (convertido em imagem) |
 | Playfair Display | Copyright 2017 The Playfair Display Project Authors (https://github.com/clauseggers/Playfair-Display), com o nome reservado «Playfair Display» | Disponível no pipeline de arte (não usada nas imagens actuais) |
 
+## Plataforma (`apps/web`)
+
+| Biblioteca | Licença | Uso |
+|---|---|---|
+| Next.js | MIT | Servidor e aplicação. O código cliente vai para o navegador na zona de gestão. |
+| React, React DOM | MIT | Interface da zona de gestão (o convite não usa React). |
+| TypeScript, tipos `@types/*` | Apache-2.0 / MIT | Só desenvolvimento. |
+
 ## Ferramentas de desenvolvimento (não distribuídas)
 
 Usadas para construir, gerar arte e testar. Não fazem parte do convite publicado.

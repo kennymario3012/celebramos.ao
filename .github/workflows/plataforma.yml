@@ -1,0 +1,61 @@
+name: Plataforma
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Tipos, construção e testes ponta a ponta
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            prototipo/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dependências
+        run: |
+          npm ci --prefix prototipo
+          npm ci --prefix apps/web
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Sincronizar o protótipo e verificar tipos
+        working-directory: apps/web
+        run: |
+          npm run sincronizar
+          npm run tipos
+
+      - name: Construir o pacote do cPanel
+        working-directory: apps/web
+        run: npm run pacote
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Testes ponta a ponta (pacote em 2 processos, zona de gestão e convite)
+        working-directory: apps/web
+        run: python testes/e2e.py
+
+      # o pacote testado fica disponível para enviar para o cPanel (Actions → esta execução → Artifacts)
+      - name: Guardar o pacote
+        uses: actions/upload-artifact@v4
+        with:
+          name: celebramos-web
+          path: apps/web/dist/celebramos-web
+          include-hidden-files: true
+          retention-days: 30

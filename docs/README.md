@@ -15,7 +15,9 @@ Especificação da plataforma **celebramos.ao**. É a fonte de verdade para quem
 | [07 · Critérios de aceitação](07-criterios-de-aceitacao.md) | Critérios com ID, o que já está automatizado, como portar os testes, definição de pronto |
 | [08 · Roadmap](08-roadmap.md) | Marcos, épicos e histórias com «Feito quando», **decisões em aberto** |
 
-Imagens de referência (capturas do protótipo): [`img/`](img/). A implementação de referência está em [`../prototipo/`](../prototipo/).
+Imagens de referência (capturas do protótipo e da zona de gestão): [`img/`](img/). A implementação de referência está em [`../prototipo/`](../prototipo/). A primeira parte da plataforma (convite servido com links pessoais e zona de gestão de convidados) está em [`../apps/web/`](../apps/web/).
+
+Decisões tomadas: [`decisoes/`](decisoes/). A primeira é a [0001 · Gestão de convidados pela própria família](decisoes/0001-gestao-de-convidados-pela-familia.md).
 
 ## Ordem de leitura
 
@@ -54,4 +56,5 @@ Imagens de referência (capturas do protótipo): [`img/`](img/). A implementaç�
 | **Intenção de confirmação** | O registo de que o convidado tocou em «Confirmar presença». |
 | **Versão** | Uma fotografia imutável da configuração, criada a cada publicação. |
 | **Operador** | Membro da equipa celebramos.ao que monta convites para clientes. |
+| **Zona de gestão de convidados** | Página `/gestao/{slug}` onde a família, com um PIN, cadastra os convidados, envia os links e acompanha as respostas. |
 | **Convite de referência** | O convite de mercado que inspirou a experiência ([01](01-produto.md#contexto)). |

@@ -6,7 +6,7 @@ Este ficheiro é para agentes de código (Claude Code, Codex, Cursor, …) e par
 
 **celebramos.ao** é uma plataforma de convites digitais para Angola. O convidado recebe um link pelo WhatsApp, abre um envelope animado e percorre o convite no telemóvel. Pode confirmar a presença pelo WhatsApp, abrir o local no mapa e guardar a data no calendário. O primeiro tipo de evento são as festas de 15 anos. A seguir vêm casamentos, aniversários e outros.
 
-Estado actual: **especificação e protótipo de referência**, validados com um cliente real. **A plataforma ainda não existe.** O teu trabalho é construí-la segundo `docs/`.
+Estado actual: **especificação e protótipo de referência**, validados com um cliente real. A **primeira parte da plataforma** já existe em `apps/web`: o convite servido com links pessoais e a **zona de gestão de convidados** para a família, com acesso por PIN ([decisão 0001](docs/decisoes/0001-gestao-de-convidados-pela-familia.md)). O resto da plataforma está por construir segundo `docs/` (ver «Estado» no `docs/08`).
 
 ## Leitura obrigatória antes de qualquer tarefa
 
@@ -73,7 +73,23 @@ python3 testes/verificar.py exemplos/exemplo-bela-principe --capturas
 python3 -m http.server -d exemplos/exemplo-bela-principe 8080
 ```
 
-Se alterares `prototipo/template.html`, `construir.py` ou as configurações, corre `validar`, `construir` e `testar`, e faz commit dos `exemplos/` reconstruídos. O CI (`.github/workflows/prototipo.yml`) faz o mesmo em cada PR.
+Se alterares `prototipo/template.html`, `construir.py` ou as configurações, corre `validar`, `construir` e `testar`, e faz commit dos `exemplos/` reconstruídos. O CI (`.github/workflows/prototipo.yml`) faz o mesmo em cada PR. O `apps/web` usa o mesmo template: corre também os testes da plataforma.
+
+## Comandos (plataforma, `apps/web`)
+
+```bash
+cd apps/web
+npm install
+npm run semear         # eventos fictícios em .dados-locais/ (PIN 123456)
+npm run dev            # http://localhost:3000/gestao/exemplo-bela-principe
+npm run tipos
+npm run pacote         # build + pacote do cPanel em dist/celebramos-web (server.js)
+python3 testes/e2e.py  # 40 verificações, contra o pacote em 2 processos
+```
+
+A plataforma fica alojada no **cPanel** do titular ([decisão 0002](docs/decisoes/0002-alojamento-no-cpanel.md)): Node.js com Passenger e dados em ficheiros fora da aplicação (`CELEBRAMOS_DADOS`). Nada de dependências que exijam serviços externos sem decisão do titular.
+
+Eventos reais preparam-se com `node scripts/preparar-evento.mjs <config.json>`. O resultado vai para `apps/web/eventos-privados/`, que o git ignora, e **nunca** entra no repositório.
 
 ## Estrutura do repositório
 
@@ -81,8 +97,9 @@ Se alterares `prototipo/template.html`, `construir.py` ou as configurações, co
 AGENTS.md / CLAUDE.md        instruções para agentes
 README.md                    apresentação do projecto
 THIRD_PARTY_NOTICES.md       licenças de terceiros
-docs/                        especificação (01–08), esquema JSON, capturas de referência
+docs/                        especificação (01–08), decisões, esquema JSON, capturas de referência
 prototipo/                   implementação de referência, testes de aceitação e pipeline de arte
+apps/web/                    plataforma (Next.js): convite com links pessoais e zona de gestão de convidados
 .github/workflows/           CI
 ```
 
