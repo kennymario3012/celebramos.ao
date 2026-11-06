@@ -52,7 +52,8 @@ Valores confirmados no código de `apps/web` (Novembro de 2026). Se o código mu
 
 - **Colar lista:** até 100 000 caracteres. Cada linha lê-se pelo conteúdo: primeiro o nome, depois as pessoas («3», «3 pessoas», «3 pax»), o telefone e o resto como grupo.
 - **Ficheiro CSV:**
-  - o modelo vem de `convidados/modelo`, com «;» e BOM, como a exportação, para abrir bem no Excel. Colunas: «Nome no convite; Pessoas; Telefone (WhatsApp); Grupo; Notas (só para a família)», mais dois exemplos fictícios;
+  - o modelo vem de `convidados/modelo`, com «;» e BOM, como a exportação. Colunas: «Nome no convite; Pessoas; Telefone (WhatsApp); Grupo; Notas (só para a família)», mais dois exemplos fictícios;
+  - num Excel em português, o modelo abre nas colunas certas. Num Excel em inglês fica tudo numa só coluna, porque o ficheiro não tem a linha `sep=;`. Nesse caso, usa-se «Colar lista» ou o Google Sheets;
   - as colunas reconhecem-se pelo título, em qualquer ordem e com sinónimos («Telemóvel», «Contacto», «Observações»…). Sem a linha dos títulos, cada linha lê-se como em «Colar lista»;
   - até 500 KB. O navegador lê o ficheiro e envia-o como texto.
 - O pedido devolve sempre primeiro uma pré-visualização, e só grava com `confirmar: true`.
