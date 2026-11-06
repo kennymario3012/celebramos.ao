@@ -37,6 +37,14 @@ function imagemTema<T extends ImagemTema | string>(temaId: string, v: T): T {
   return { ...img, src: caminhoTema(temaId, img.src) } as T;
 }
 
+/**
+ * As fotos da galeria são do evento, não do tema. «img/foto-1.webp» passa a «/c/<slug>/img/foto-1.webp» no link
+ * geral; no pessoal, «img/foto-1.webp» vai a seguir ao link do convidado. A regra de acesso é a do convite (fotos.ts).
+ */
+function srcFoto(prefixo: string, v: string) {
+  return /^(\/|https?:)/.test(v) ? v : prefixo + encodeURIComponent(v.replace(/^(\.\/)?img\//, ""));
+}
+
 export function configuracaoParaConvidado(base: ConfiguracaoConvite, op: OpcoesRender): ConfiguracaoConvite {
   const cfg: ConfiguracaoConvite = structuredClone(base);
   const temaId = cfg.tema.id;
@@ -49,6 +57,8 @@ export function configuracaoParaConvidado(base: ConfiguracaoConvite, op: OpcoesR
     ilustracao: imagemTema(temaId, im.ilustracao),
     mensagem: imagemTema(temaId, im.mensagem),
   };
+  const prefixoFotos = `/c/${op.slug}/${op.convidado ? `${op.convidado.token}/` : ""}img/`;
+  cfg.galeria = { ...cfg.galeria, fotos: cfg.galeria.fotos.map((f) => ({ ...f, src: srcFoto(prefixoFotos, f.src) })) };
   cfg.id = op.slug;
   cfg.demonstracao = false;
   cfg.convidados = {};

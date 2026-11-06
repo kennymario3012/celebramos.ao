@@ -191,6 +191,7 @@ Decisão actual, validada com o cliente: **a confirmação é feita pelo WhatsAp
 | `GET /c/{slug}/{token}` | Convite pessoal. Token desconhecido ou revogado: 404 (mesma página que um slug inexistente, para não revelar nada). |
 | `GET /c/{slug}/previa/{token_previa}` | Pré-visualização (modo demonstração). |
 | `GET /c/{slug}/calendario.ics` | Ficheiro de calendário ([04 §6](04-modelo-de-dados.md#6-ficheiro-de-calendário-ics)). |
+| `GET /c/{slug}/img/{ficheiro}` · `GET /c/{slug}/{token}/img/{ficheiro}` | Foto da galeria do evento ([04 §8](04-modelo-de-dados.md#8-implementação-actual-appsweb)), com a regra de acesso do convite: pelo link geral só enquanto estiver activo, pelo pessoal só com token válido (não conta como abertura). Qualquer falha, incluindo nomes com pastas ou sem extensão de imagem, dá o mesmo 404 do convite. `Cache-Control: private` (nenhuma cache partilhada a guarda) e `ETag`. *(implementado)* |
 | `GET /temas/{tema}/og.jpg` | Imagem de partilha do tema, 1200 × 630 ([06](06-requisitos-nao-funcionais.md#seo-e-partilha)). *(implementado; uma imagem por evento, em `/c/{slug}/og.jpg`, fica para depois)* |
 | `POST /c/{slug}/{token}/i` | Interacções (`sendBeacon`, corpo `{"tipo": "aberto" \| "confirmar"}`). Uma vez por aparelho. Responde 204 mesmo com erro. *(implementado)* |
 | `GET /gestao/{slug}` | Zona de gestão de convidados (PIN). *(implementado)* |
@@ -255,7 +256,7 @@ prototipo/           referência (este repositório); a arte procedural continua
 | Aplicação | Next.js 16 em `apps/web` (ainda sem `packages/`), em modo `standalone`. O ficheiro de arranque é `server.js` e o renderizador está em `src/convite/`. |
 | Template do convite | O do protótipo, copiado na construção (`scripts/sincronizar-prototipo.mjs`). |
 | Dados | Ficheiros JSON em `CELEBRAMOS_DADOS`, fora da aplicação, com escrita condicional por ETag e bloqueio entre processos. |
-| Eventos | `CELEBRAMOS_DADOS/eventos/{slug}/evento.json`, ou a variável `CELEBRAMOS_EVENTOS`. São preparados com `scripts/preparar-evento.mjs`. |
+| Eventos | `CELEBRAMOS_DADOS/eventos/{slug}/evento.json`, ou a variável `CELEBRAMOS_EVENTOS`. As fotos da galeria ficam em `eventos/{slug}/img/`. São preparados com `scripts/preparar-evento.mjs`. |
 | Construção e publicação | O CI constrói e testa o pacote (artefacto `celebramos-web`), que se envia para o cPanel. Nada é construído no servidor. |
 | Testes | `apps/web/testes/e2e.py` (Playwright), contra o próprio pacote em 2 processos, no CI (`.github/workflows/plataforma.yml`). |
 

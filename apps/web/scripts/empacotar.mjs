@@ -46,7 +46,8 @@ writeFileSync(
 3. Variáveis de ambiente:
    CELEBRAMOS_DADOS=/home/<utilizador>/celebramos-dados   (pasta dos dados, FORA da raiz da aplicação)
    URL_PUBLICO=https://<domínio>
-4. Dados de cada evento: <CELEBRAMOS_DADOS>/eventos/<slug>/evento.json
+4. Dados de cada evento: <CELEBRAMOS_DADOS>/eventos/<slug>/evento.json, e as fotos da galeria em
+   <CELEBRAMOS_DADOS>/eventos/<slug>/img/ (a pasta que scripts/preparar-evento.mjs gera)
 5. Reiniciar a aplicação. Depois de actualizar o pacote: reiniciar e limpar a cache do NGINX.
 
 Não é preciso «Run NPM Install»: as dependências já vêm no pacote.
