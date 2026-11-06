@@ -134,7 +134,7 @@ Requisitos:
 
 - Disponibilidade das rotas `/c/` ≥ 99,5 % por mês.
 - O convite publicado **tem de** abrir mesmo com a base de dados indisponível: versão imutável, cache na CDN com `stale-if-error`, e links de WhatsApp, mapas e calendário directos.
-- As interacções são registadas «na melhor das hipóteses». Perder uma é aceitável, mas bloquear o convidado nunca é. A resposta dentro do convite também não bloqueia: o WhatsApp abre no mesmo toque, mesmo que a gravação falhe.
+- As interacções são registadas «na melhor das hipóteses». Perder uma é aceitável, mas bloquear o convidado nunca é. A resposta dentro do convite também não bloqueia: se a gravação falhar, o convite mostra logo o botão do WhatsApp para avisar a família.
 - Recuperação: RPO ≤ 24 h, RTO ≤ 4 h.
 
 ## Observabilidade e métricas

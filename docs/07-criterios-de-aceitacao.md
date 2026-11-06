@@ -22,7 +22,7 @@ O script serve a pasta num servidor local, troca as Google Fonts por cópias loc
 ```bash
 cd apps/web
 npm install && npm run pacote
-python3 testes/e2e.py            # 70 verificações (convite servido pela plataforma, resposta no convite e zona de gestão)
+python3 testes/e2e.py            # 72 verificações (convite servido pela plataforma, resposta no convite e zona de gestão)
 python3 testes/e2e.py --capturas # + capturas em testes/_capturas/
 ```
 
@@ -67,7 +67,7 @@ O script arranca o **próprio pacote do cPanel** (`dist/celebramos-web/server.js
 | CA-RSVP-03 | A mensagem leva o nome do convidado e, se houver, o número de pessoas. | ✔¹ |
 | CA-RSVP-04 | Sem número configurado, o toque mostra o aviso de pré-visualização e não abre um link partido. | ✔ |
 | CA-RSVP-05 | *(Plataforma)* O toque nos botões que só abrem o WhatsApp regista `confirmar_tocado` sem atrasar a abertura do WhatsApp. Se o registo falhar, o WhatsApp abre na mesma. | ✔² |
-| CA-RSVP-06 | *(Plataforma)* No link pessoal, o convidado responde no convite: vou ou não vou, pessoas de 1 até ao número do convite (por omissão, todas) e mensagem opcional. O mesmo toque grava a resposta e abre o WhatsApp com a mensagem de confirmação, com as pessoas escolhidas, ou a de recusa, e com a mensagem do convidado. | ✔² |
+| CA-RSVP-06 | *(Plataforma)* No link pessoal, o convidado responde no convite: vou ou não vou, pessoas de 1 até ao número do convite (por omissão, todas) e mensagem opcional. Gravar não abre o WhatsApp. Depois de gravar, «Avisar a família pelo WhatsApp» abre-o com a mensagem de confirmação, com as pessoas, ou a de recusa, e com a mensagem do convidado. Se a gravação falhar, o botão do WhatsApp aparece na mesma. | ✔² |
 | CA-RSVP-07 | *(Plataforma)* Ao reabrir o link, o convite mostra a resposta registada (também a marcada pela família) e deixa alterá-la até ao prazo. | ✔² |
 | CA-RSVP-08 | *(Plataforma)* Depois do prazo (fim do dia de `confirmacao.ate` em Luanda), o formulário fecha: o convite mostra a resposta registada e os botões do WhatsApp, e o servidor recusa respostas (410). | ✔² |
 | CA-RSVP-09 | *(Plataforma)* O link geral só tem o WhatsApp, sem formulário. A pré-visualização mostra o formulário, mas não grava. | ✔² |

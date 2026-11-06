@@ -27,7 +27,7 @@ Actualizado em Novembro de 2026. A pedido do primeiro cliente real, a **zona de 
 | E4-S4 | Parcial | WhatsApp e copiar: feito. Partilha nativa: por fazer |
 | E5-S1 | Feito | «aberto» e «confirmar» por `sendBeacon`, uma vez por aparelho |
 | E5-S2 | Feito | Resumo, lista, filtros, pesquisa, respostas com número de pessoas |
-| E5-S6 | Feito | Resposta dentro do convite, com o WhatsApp no mesmo toque ([decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)) |
+| E5-S6 | Feito | Resposta dentro do convite e, depois de gravar, «Avisar a família pelo WhatsApp» ([decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)) |
 | E5-S4 | Parcial | CSV para o Excel. Ficheiro `.xlsx`: por fazer |
 | E5-S5 | Parcial | PIN por evento em vez de contas e papéis |
 
@@ -102,7 +102,7 @@ Próximos passos sugeridos:
 | E5-S3 | Lembretes pelo WhatsApp para os pendentes. | A mensagem leva o link pessoal certo. |
 | E5-S4 | Exportação CSV e Excel. | CA-PLA-08. |
 | E5-S5 | Entrada dos anfitriões (código por telemóvel ou email) e papéis (proprietário, editor, revisor). | CA-PLA-11. |
-| E5-S6 | Confirmação dentro do convite (fase 2): no link pessoal, vou ou não vou, pessoas e mensagem; grava e abre o WhatsApp no mesmo toque; alterar até ao prazo ([decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)). | CA-RSVP-06 a CA-RSVP-10, CA-GES-16 e CA-GES-17. |
+| E5-S6 | Confirmação dentro do convite (fase 2): no link pessoal, vou ou não vou, pessoas e mensagem; grava e depois oferece «Avisar a família pelo WhatsApp»; alterar até ao prazo ([decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)). | CA-RSVP-06 a CA-RSVP-10, CA-GES-16 e CA-GES-17. |
 
 ## E6 · Temas
 
@@ -153,7 +153,7 @@ Para o titular do projecto decidir. Quando uma decisão for tomada, registá-la 
 | D1 | Stack | Next.js + Postgres + S3 / outra | A do [05](05-plataforma.md#arquitectura-proposta). **Em uso em `apps/web`:** Next.js com ficheiros JSON no servidor em vez de Postgres (decisões 0001 e 0002). Confirmar quando houver vários eventos em simultâneo | E0 |
 | D2 | Alojamento e região | Europa, África do Sul, Angola | **Decidido:** cPanel do titular, Host2Africa ([decisão 0002](decisoes/0002-alojamento-no-cpanel.md)). Confirmar com o fornecedor que o servidor está em Angola | E8-S4 |
 | D3 | Entrada dos anfitriões | Código por SMS, por WhatsApp, email | **Decidido para já:** PIN por evento para a família (decisão 0001). Depois, código por telemóvel com email como alternativa | E5-S5 |
-| D4 | Confirmação | Só WhatsApp / formulário no convite + WhatsApp | **Decidido:** no link pessoal, resposta dentro do convite e WhatsApp no mesmo toque; no link geral, só WhatsApp ([decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)) | — |
+| D4 | Confirmação | Só WhatsApp / formulário no convite + WhatsApp | **Decidido:** no link pessoal, resposta dentro do convite e, depois de gravar, botão para avisar pelo WhatsApp; no link geral, só WhatsApp ([decisão 0003](decisoes/0003-confirmacao-dentro-do-convite.md)) | — |
 | D5 | Retenção dos dados dos convidados | 30, 90 ou 180 dias depois do evento | 90 dias | E8-S2 |
 | D6 | Preços e pagamentos | Por convite, por pacote. Meios e fornecedor | — | E7-S3 |
 | D7 | Licença do código | Privado (todos os direitos reservados) ou código aberto | — | O repositório está **público** e sem licença: o código fica visível mas não licenciado. Tornar o repositório privado se o código for proprietário. |

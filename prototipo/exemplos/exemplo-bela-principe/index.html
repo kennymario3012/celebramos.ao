@@ -128,6 +128,10 @@ html[data-convite-aberto] [data-abertura]{display:none}
 .resumo-rot{font-size:clamp(.85rem,4vw,1rem);font-size:clamp(.85rem,4cqi,1rem);letter-spacing:.16em;color:var(--muted)}
 .resumo-val{font-size:clamp(1.2rem,6vw,1.6rem);font-size:clamp(1.2rem,6cqi,1.6rem);font-weight:700;letter-spacing:.04em;color:var(--ink)}
 .resp-estado:empty{display:none}
+#resp-enviar{margin-top:.5rem}
+.btn-pill[data-avisar]{padding-inline:1.5rem;font-size:.95rem;line-height:1.35}
+.btn-pill[data-avisar] span{text-wrap:balance}
+.btn:disabled{opacity:.6;cursor:default}
 
 /* convite */
 .mono-xl{font-size:clamp(4.5rem,22vw,6rem);font-size:clamp(4.5rem,22cqi,6rem)}
@@ -353,8 +357,8 @@ const CONFIG = {
     "telefone": ""
    }
   ],
-  "mensagem": "Olá! Confirmo a presença na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}{pessoas}",
-  "mensagemRecusa": "Olá! Lamento, mas não será possível estar presente na festa de 15 anos da {debutante} ({dataCurta}).\nConvidado: {convidado}"
+  "mensagem": "Olá! Eu, {convidado}, confirmo a minha presença{pessoas} na festa de 15 anos da {debutante}, no dia {dataCurta}.",
+  "mensagemRecusa": "Olá! Eu, {convidado}, infelizmente não vou poder estar presente na festa de 15 anos da {debutante}, no dia {dataCurta}. Agradeço muito o convite e desejo uma festa muito bonita!"
  },
  "textos": {
   "confirmarLead": "Por favor, confirme a sua presença no baile até",
@@ -707,7 +711,7 @@ const CONFIG = {
 </dialog>
 
 <script>
-const ICONS = {"brand-whatsapp": "<path d=\"M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9\" /> <path d=\"M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1\" />", "camera": "<path d=\"M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2\" /> <path d=\"M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" />", "brand-waze": "<path d=\"M6.66 17.52a7 7 0 0 1 -3.66 -4.52c2 0 3 -1 3 -2.51c0 -3.92 2.25 -7.49 7.38 -7.49c4.62 0 7.62 3.51 7.62 8a8.08 8.08 0 0 1 -3.39 6.62\" /> <path d=\"M10 18.69a17.29 17.29 0 0 0 3.33 .3h.54\" /> <path d=\"M14 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M6 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M16 9h.01\" /> <path d=\"M11 9h.01\" />", "users-group": "<path d=\"M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1\" /> <path d=\"M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M17 10h2a2 2 0 0 1 2 2v1\" /> <path d=\"M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M3 13v-1a2 2 0 0 1 2 -2h2\" />", "tools-kitchen-2": "<path d=\"M19 3v12h-5c-.023 -3.681 .184 -7.406 5 -12m0 12v6h-1v-3m-10 -14v17m-3 -17v3a3 3 0 1 0 6 0v-3\" />", "cake": "<path d=\"M3 20h18v-8a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -3 3v8\" /> <path d=\"M3 14.803c.312 .135 .654 .204 1 .197a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1c.35 .007 .692 -.062 1 -.197\" /> <path d=\"M12 4l1.465 1.638a2 2 0 1 1 -3.015 .099l1.55 -1.737\" />", "clock": "<path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0\" /> <path d=\"M12 7v5l3 3\" />", "user-plus": "<path d=\"M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0\" /> <path d=\"M16 19h6\" /> <path d=\"M19 16v6\" /> <path d=\"M6 21v-2a4 4 0 0 1 4 -4h4\" />", "confetti": "<path d=\"M4 5h2\" /> <path d=\"M5 4v2\" /> <path d=\"M11.5 4l-.5 2\" /> <path d=\"M18 5h2\" /> <path d=\"M19 4v2\" /> <path d=\"M15 9l-1 1\" /> <path d=\"M18 13l2 -.5\" /> <path d=\"M18 19h2\" /> <path d=\"M19 18v2\" /> <path d=\"M14 16.518l-6.518 -6.518l-4.39 9.58a1 1 0 0 0 1.329 1.329l9.579 -4.39\" />", "camera-heart": "<path d=\"M10.5 20h-5.5a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v2\" /> <path d=\"M14.41 11.212a3 3 0 1 0 -4.15 4.231\" /> <path d=\"M18 22l3.35 -3.284a2.143 2.143 0 0 0 .005 -3.071a2.242 2.242 0 0 0 -3.129 -.006l-.224 .22l-.223 -.22a2.242 2.242 0 0 0 -3.128 -.006a2.143 2.143 0 0 0 -.006 3.071l3.355 3.296\" />", "mood-smile": "<path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /> <path d=\"M9 10l.01 0\" /> <path d=\"M15 10l.01 0\" /> <path d=\"M9.5 15a3.5 3.5 0 0 0 5 0\" />", "calendar-plus": "<path d=\"M12.5 21h-6.5a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5\" /> <path d=\"M16 3v4\" /> <path d=\"M8 3v4\" /> <path d=\"M4 11h16\" /> <path d=\"M16 19h6\" /> <path d=\"M19 16v6\" />", "crown": "<path d=\"M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4l4 -6\" />", "candle": "<path d=\"M9 21h6v-10a1 1 0 0 0 -1 -1h-4a1 1 0 0 0 -1 1l0 10\" /> <path d=\"M12 2l1.465 1.638a2 2 0 1 1 -3.015 .099l1.55 -1.737\" />", "music": "<path d=\"M3 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" /> <path d=\"M13 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" /> <path d=\"M9 17v-13h10v13\" /> <path d=\"M9 8h10\" />", "x": "<path d=\"M18 6l-12 12\" /> <path d=\"M6 6l12 12\" />", "chevron-left": "<path d=\"M15 6l-6 6l6 6\" />", "chevron-right": "<path d=\"M9 6l6 6l-6 6\" />", "volume": "<path d=\"M15 8a5 5 0 0 1 0 8\" /> <path d=\"M17.7 5a9 9 0 0 1 0 14\" /> <path d=\"M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5\" />", "volume-off": "<path d=\"M15 8a5 5 0 0 1 1.912 4.934m-1.377 2.602a5 5 0 0 1 -.535 .464\" /> <path d=\"M17.7 5a9 9 0 0 1 2.362 11.086m-1.676 2.299a9 9 0 0 1 -.686 .615\" /> <path d=\"M9.069 5.054l.431 -.554a.8 .8 0 0 1 1.5 .5v2m0 4v8a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l1.294 -1.664\" /> <path d=\"M3 3l18 18\" />", "sparkles": "<path d=\"M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6\" />", "glass-full": "<path d=\"M8 21l8 0\" /> <path d=\"M12 15l0 6\" /> <path d=\"M17 3l1 7c0 3.012 -2.686 5 -6 5s-6 -1.988 -6 -5l1 -7h10\" /> <path d=\"M6 10a5 5 0 0 1 6 0a5 5 0 0 0 6 0\" />", "heart": "<path d=\"M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572\" />", "circle-check-filled": "<path d=\"M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-1.293 5.953a1 1 0 0 0 -1.32 -.083l-.094 .083l-3.293 3.292l-1.293 -1.292l-.094 -.083a1 1 0 0 0 -1.403 1.403l.083 .094l2 2l.094 .083a1 1 0 0 0 1.226 0l.094 -.083l4 -4l.083 -.094a1 1 0 0 0 -.083 -1.32z\" />", "map-pin-filled": "<path d=\"M18.364 4.636a9 9 0 0 1 .203 12.519l-.203 .21l-4.243 4.242a3 3 0 0 1 -4.097 .135l-.144 -.135l-4.244 -4.243a9 9 0 0 1 12.728 -12.728zm-6.364 3.364a3 3 0 1 0 0 6a3 3 0 0 0 0 -6\" />", "gift": "<path d=\"M3 9a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1l0 -2\" /> <path d=\"M12 8l0 13\" /> <path d=\"M19 12v7a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-7\" /> <path d=\"M7.5 8a2.5 2.5 0 0 1 0 -5a4.8 8 0 0 1 4.5 5a4.8 8 0 0 1 4.5 -5a2.5 2.5 0 0 1 0 5\" />", "building-store": "<path d=\"M3 21l18 0\" /> <path d=\"M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4\" /> <path d=\"M5 21l0 -10.15\" /> <path d=\"M19 21l0 -10.15\" /> <path d=\"M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4\" />", "shoe": "<path d=\"M4 6h5.426a1 1 0 0 1 .863 .496l1.064 1.823a3 3 0 0 0 1.896 1.407l4.677 1.114a4 4 0 0 1 3.074 3.89v2.27a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-10a1 1 0 0 1 1 -1\" /> <path d=\"M14 13l1 -2\" /> <path d=\"M8 18v-1a4 4 0 0 0 -4 -4h-1\" /> <path d=\"M10 12l1.5 -3\" />", "shopping-bag": "<path d=\"M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304\" /> <path d=\"M9 11v-5a3 3 0 0 1 6 0v5\" />", "headphones": "<path d=\"M4 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3\" /> <path d=\"M15 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3\" /> <path d=\"M4 15v-3a8 8 0 0 1 16 0v3\" />", "perfume": "<path d=\"M10 6v3\" /> <path d=\"M14 6v3\" /> <path d=\"M5 11a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2l0 -8\" /> <path d=\"M10 15a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M9 3h6v3h-6l0 -3\" />", "device-speaker": "<path d=\"M5 5a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2l0 -14\" /> <path d=\"M9 14a3 3 0 1 0 6 0a3 3 0 1 0 -6 0\" /> <path d=\"M12 7l0 .01\" />", "device-watch": "<path d=\"M6 9a3 3 0 0 1 3 -3h6a3 3 0 0 1 3 3v6a3 3 0 0 1 -3 3h-6a3 3 0 0 1 -3 -3v-6\" /> <path d=\"M9 18v3h6v-3\" /> <path d=\"M9 6v-3h6v3\" />", "devices": "<path d=\"M13 9a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1v-10\" /> <path d=\"M18 8v-3a1 1 0 0 0 -1 -1h-13a1 1 0 0 0 -1 1v12a1 1 0 0 0 1 1h9\" /> <path d=\"M16 9h2\" />", "hanger": "<path d=\"M14 6a2 2 0 1 0 -4 0c0 1.667 .67 3 2 4h-.008l7.971 4.428a2 2 0 0 1 1.029 1.749v.823a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-.823a2 2 0 0 1 1.029 -1.749l7.971 -4.428\" />"};
+const ICONS = {"brand-whatsapp": "<path d=\"M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9\" /> <path d=\"M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1\" />", "camera": "<path d=\"M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2\" /> <path d=\"M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" />", "brand-waze": "<path d=\"M6.66 17.52a7 7 0 0 1 -3.66 -4.52c2 0 3 -1 3 -2.51c0 -3.92 2.25 -7.49 7.38 -7.49c4.62 0 7.62 3.51 7.62 8a8.08 8.08 0 0 1 -3.39 6.62\" /> <path d=\"M10 18.69a17.29 17.29 0 0 0 3.33 .3h.54\" /> <path d=\"M14 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M6 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M16 9h.01\" /> <path d=\"M11 9h.01\" />", "users-group": "<path d=\"M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1\" /> <path d=\"M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M17 10h2a2 2 0 0 1 2 2v1\" /> <path d=\"M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M3 13v-1a2 2 0 0 1 2 -2h2\" />", "tools-kitchen-2": "<path d=\"M19 3v12h-5c-.023 -3.681 .184 -7.406 5 -12m0 12v6h-1v-3m-10 -14v17m-3 -17v3a3 3 0 1 0 6 0v-3\" />", "cake": "<path d=\"M3 20h18v-8a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -3 3v8\" /> <path d=\"M3 14.803c.312 .135 .654 .204 1 .197a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1c.35 .007 .692 -.062 1 -.197\" /> <path d=\"M12 4l1.465 1.638a2 2 0 1 1 -3.015 .099l1.55 -1.737\" />", "clock": "<path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0\" /> <path d=\"M12 7v5l3 3\" />", "user-plus": "<path d=\"M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0\" /> <path d=\"M16 19h6\" /> <path d=\"M19 16v6\" /> <path d=\"M6 21v-2a4 4 0 0 1 4 -4h4\" />", "confetti": "<path d=\"M4 5h2\" /> <path d=\"M5 4v2\" /> <path d=\"M11.5 4l-.5 2\" /> <path d=\"M18 5h2\" /> <path d=\"M19 4v2\" /> <path d=\"M15 9l-1 1\" /> <path d=\"M18 13l2 -.5\" /> <path d=\"M18 19h2\" /> <path d=\"M19 18v2\" /> <path d=\"M14 16.518l-6.518 -6.518l-4.39 9.58a1 1 0 0 0 1.329 1.329l9.579 -4.39\" />", "camera-heart": "<path d=\"M10.5 20h-5.5a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v2\" /> <path d=\"M14.41 11.212a3 3 0 1 0 -4.15 4.231\" /> <path d=\"M18 22l3.35 -3.284a2.143 2.143 0 0 0 .005 -3.071a2.242 2.242 0 0 0 -3.129 -.006l-.224 .22l-.223 -.22a2.242 2.242 0 0 0 -3.128 -.006a2.143 2.143 0 0 0 -.006 3.071l3.355 3.296\" />", "mood-smile": "<path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /> <path d=\"M9 10l.01 0\" /> <path d=\"M15 10l.01 0\" /> <path d=\"M9.5 15a3.5 3.5 0 0 0 5 0\" />", "calendar-plus": "<path d=\"M12.5 21h-6.5a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5\" /> <path d=\"M16 3v4\" /> <path d=\"M8 3v4\" /> <path d=\"M4 11h16\" /> <path d=\"M16 19h6\" /> <path d=\"M19 16v6\" />", "crown": "<path d=\"M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4l4 -6\" />", "candle": "<path d=\"M9 21h6v-10a1 1 0 0 0 -1 -1h-4a1 1 0 0 0 -1 1l0 10\" /> <path d=\"M12 2l1.465 1.638a2 2 0 1 1 -3.015 .099l1.55 -1.737\" />", "music": "<path d=\"M3 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" /> <path d=\"M13 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" /> <path d=\"M9 17v-13h10v13\" /> <path d=\"M9 8h10\" />", "x": "<path d=\"M18 6l-12 12\" /> <path d=\"M6 6l12 12\" />", "chevron-left": "<path d=\"M15 6l-6 6l6 6\" />", "chevron-right": "<path d=\"M9 6l6 6l-6 6\" />", "volume": "<path d=\"M15 8a5 5 0 0 1 0 8\" /> <path d=\"M17.7 5a9 9 0 0 1 0 14\" /> <path d=\"M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5\" />", "volume-off": "<path d=\"M15 8a5 5 0 0 1 1.912 4.934m-1.377 2.602a5 5 0 0 1 -.535 .464\" /> <path d=\"M17.7 5a9 9 0 0 1 2.362 11.086m-1.676 2.299a9 9 0 0 1 -.686 .615\" /> <path d=\"M9.069 5.054l.431 -.554a.8 .8 0 0 1 1.5 .5v2m0 4v8a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l1.294 -1.664\" /> <path d=\"M3 3l18 18\" />", "sparkles": "<path d=\"M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6\" />", "glass-full": "<path d=\"M8 21l8 0\" /> <path d=\"M12 15l0 6\" /> <path d=\"M17 3l1 7c0 3.012 -2.686 5 -6 5s-6 -1.988 -6 -5l1 -7h10\" /> <path d=\"M6 10a5 5 0 0 1 6 0a5 5 0 0 0 6 0\" />", "heart": "<path d=\"M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572\" />", "circle-check-filled": "<path d=\"M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-1.293 5.953a1 1 0 0 0 -1.32 -.083l-.094 .083l-3.293 3.292l-1.293 -1.292l-.094 -.083a1 1 0 0 0 -1.403 1.403l.083 .094l2 2l.094 .083a1 1 0 0 0 1.226 0l.094 -.083l4 -4l.083 -.094a1 1 0 0 0 -.083 -1.32z\" />", "map-pin-filled": "<path d=\"M18.364 4.636a9 9 0 0 1 .203 12.519l-.203 .21l-4.243 4.242a3 3 0 0 1 -4.097 .135l-.144 -.135l-4.244 -4.243a9 9 0 0 1 12.728 -12.728zm-6.364 3.364a3 3 0 1 0 0 6a3 3 0 0 0 0 -6\" />", "gift": "<path d=\"M3 9a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1l0 -2\" /> <path d=\"M12 8l0 13\" /> <path d=\"M19 12v7a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-7\" /> <path d=\"M7.5 8a2.5 2.5 0 0 1 0 -5a4.8 8 0 0 1 4.5 5a4.8 8 0 0 1 4.5 -5a2.5 2.5 0 0 1 0 5\" />", "building-store": "<path d=\"M3 21l18 0\" /> <path d=\"M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4\" /> <path d=\"M5 21l0 -10.15\" /> <path d=\"M19 21l0 -10.15\" /> <path d=\"M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4\" />", "shoe": "<path d=\"M4 6h5.426a1 1 0 0 1 .863 .496l1.064 1.823a3 3 0 0 0 1.896 1.407l4.677 1.114a4 4 0 0 1 3.074 3.89v2.27a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-10a1 1 0 0 1 1 -1\" /> <path d=\"M14 13l1 -2\" /> <path d=\"M8 18v-1a4 4 0 0 0 -4 -4h-1\" /> <path d=\"M10 12l1.5 -3\" />", "shopping-bag": "<path d=\"M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304\" /> <path d=\"M9 11v-5a3 3 0 0 1 6 0v5\" />", "headphones": "<path d=\"M4 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3\" /> <path d=\"M15 15a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2l0 -3\" /> <path d=\"M4 15v-3a8 8 0 0 1 16 0v3\" />", "perfume": "<path d=\"M10 6v3\" /> <path d=\"M14 6v3\" /> <path d=\"M5 11a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2l0 -8\" /> <path d=\"M10 15a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M9 3h6v3h-6l0 -3\" />", "device-speaker": "<path d=\"M5 5a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2l0 -14\" /> <path d=\"M9 14a3 3 0 1 0 6 0a3 3 0 1 0 -6 0\" /> <path d=\"M12 7l0 .01\" />", "device-watch": "<path d=\"M6 9a3 3 0 0 1 3 -3h6a3 3 0 0 1 3 3v6a3 3 0 0 1 -3 3h-6a3 3 0 0 1 -3 -3v-6\" /> <path d=\"M9 18v3h6v-3\" /> <path d=\"M9 6v-3h6v3\" />", "devices": "<path d=\"M13 9a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1v-10\" /> <path d=\"M18 8v-3a1 1 0 0 0 -1 -1h-13a1 1 0 0 0 -1 1v12a1 1 0 0 0 1 1h9\" /> <path d=\"M16 9h2\" />", "hanger": "<path d=\"M14 6a2 2 0 1 0 -4 0c0 1.667 .67 3 2 4h-.008l7.971 4.428a2 2 0 0 1 1.029 1.749v.823a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-.823a2 2 0 0 1 1.029 -1.749l7.971 -4.428\" />", "check": "<path d=\"M5 12l5 5l10 -10\" />"};
 ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.7 5.4h4.6l.7-5.4"/><path d="M9.7 10l-4.4 8.3c2 1.7 4.3 2.6 6.7 2.6s4.7-.9 6.7-2.6l-4.4-8.3"/><path d="M7.8 15.4c1.3.6 2.7.9 4.2.9s2.9-.3 4.2-.9"/><path d="M12 7.2v.01"/>';
 
 (function () {
@@ -860,7 +864,7 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
   }
   function mensagemConfirmacao(estado, pessoas, extra) {
     var modelo = estado === "recusado"
-      ? C.confirmacao.mensagemRecusa || "Olá! Lamento, mas não será possível estar presente no dia {dataCurta}.\nConvidado: {convidado}"
+      ? C.confirmacao.mensagemRecusa || "Olá! Eu, {convidado}, infelizmente não vou poder estar presente no dia {dataCurta}. Agradeço muito o convite e desejo uma festa muito bonita!"
       : C.confirmacao.mensagem;
     return preencher(modelo, {
       debutante: C.debutante, homenageado: C.debutante, dataCurta: d.dia + " de " + MESES[d.mes - 1],
@@ -869,10 +873,18 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
     }) + (extra ? "\n\n" + extra : "");
   }
   var rsvp = $("#rsvp"), boxR = $("#resposta");
-  function montarConfirmacao() {
+  /* botões do WhatsApp: os da configuração (redondos) ou, depois de responder no convite, «Avisar a família» (em pílula) */
+  function desenharBotoes(avisar, estado, pessoas, extra) {
+    var msg = mensagemConfirmacao(estado, pessoas, extra);
     rsvp.innerHTML = C.confirmacao.botoes.map(function (b, i) {
-      return '<a class="btn btn-round" data-rsvp="' + i + '" href="#">' + icon("brand-whatsapp:34") + "<span>" + esc(b.rotulo) + "</span></a>";
+      var tel = String(b.telefone || "").replace(/\D/g, ""), href = tel ? "https://wa.me/" + tel + "?text=" + encodeURIComponent(msg) : "#";
+      var m = /\(([^)]*)\)\s*$/.exec(b.rotulo); /* «Confirmar presença (mãe)» → «Avisar pelo WhatsApp (mãe)» */
+      var rotulo = !avisar ? b.rotulo : m ? "Avisar pelo WhatsApp (" + m[1] + ")" : "Avisar a família pelo WhatsApp";
+      return '<a class="btn ' + (avisar ? "btn-pill" : "btn-round") + '" data-rsvp="' + i + '"' + (avisar ? " data-avisar" : "") + ' href="' + href + '"' +
+        (tel ? ' target="_blank" rel="noopener noreferrer"' : "") + ">" + icon("brand-whatsapp:" + (avisar ? 28 : 34)) + "<span>" + esc(rotulo) + "</span></a>";
     }).join("");
+  }
+  function montarConfirmacao() {
     var R = C.responder, actual = convidado && convidado.resposta, limite = (convidado && convidado.pessoas) || 1;
     resp.modo = !R || !convidado ? "" : R.fechado ? "fechado" : actual ? "resumo" : "formulario";
     resp.estado = actual ? actual.estado : "confirmado";
@@ -881,27 +893,13 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
     resp.registada = false;
     desenharResposta();
   }
-  /* o WhatsApp abre no mesmo toque: o link leva sempre a mensagem do que está escolhido */
-  function actualizarBotoes() {
-    var form = resp.modo === "formulario", estado = form ? resp.estado : "confirmado";
-    var pessoas = form ? (estado === "confirmado" ? resp.pessoas : 0) : convidado && convidado.pessoas;
-    var msg = mensagemConfirmacao(estado, pessoas, form ? limpar(resp.mensagem) : "");
-    $$("[data-rsvp]", rsvp).forEach(function (a) {
-      var b = C.confirmacao.botoes[+a.getAttribute("data-rsvp")], tel = String(b.telefone || "").replace(/\D/g, "");
-      a.setAttribute("href", tel ? "https://wa.me/" + tel + "?text=" + encodeURIComponent(msg) : "#");
-      if (tel) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
-      var m = /\(([^)]*)\)\s*$/.exec(b.rotulo); /* «Confirmar presença (mãe)» → «Enviar resposta (mãe)» */
-      a.lastChild.textContent = estado === "recusado" ? "Enviar resposta" + (m ? " (" + m[1] + ")" : "") : b.rotulo;
-    });
-  }
   rsvp.addEventListener("click", function (e) {
     var a = e.target.closest ? e.target.closest("[data-rsvp]") : null;
     if (!a) return;
-    var semNumero = a.getAttribute("href") === "#";
-    if (semNumero || resp.aEnviar) e.preventDefault();
-    if (resp.modo === "formulario") { if (!resp.aEnviar) enviarResposta(semNumero); }
-    else if (semNumero) aviso("Pré-visualização: o número de WhatsApp para a confirmação será configurado na versão final.");
-    else registar("confirmar");
+    if (a.getAttribute("href") === "#") {
+      e.preventDefault();
+      aviso("Pré-visualização: o número de WhatsApp para a confirmação será configurado na versão final.");
+    } else if (!a.hasAttribute("data-avisar")) registar("confirmar");
   });
 
   /* ---------- confirmação dentro do convite (plataforma, link pessoal: C.responder) ---------- */
@@ -919,7 +917,7 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
   function desenharResposta() {
     var modo = resp.modo, actual = convidado && convidado.resposta;
     boxR.hidden = !modo;
-    rsvp.hidden = modo === "resumo";
+    rsvp.hidden = modo === "formulario";
     /* mais conteúdo: menos espaço entre blocos e o fim afastado do canto de baixo (decoração) */
     boxR.parentNode.style.gap = modo ? "1.25rem" : "2rem";
     boxR.parentNode.style.paddingBottom = modo ? "10rem" : "";
@@ -931,21 +929,28 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
           '<button type="button" data-q="1" aria-label="Mais uma pessoa">+</button></div></div>' : "") +
         '<button type="button" class="link-sub" id="resp-escrever">Escrever uma mensagem à família</button>' +
         '<textarea id="resp-msg" rows="2" maxlength="300" aria-label="Mensagem para a família (opcional)" placeholder="Mensagem para a família (opcional)"></textarea>' +
+        '<button type="button" class="btn btn-round" id="resp-enviar">' + icon("check:34:2") + "<span></span></button>" +
         '<p class="nota body resp-estado" id="resp-estado" role="status"></p>';
       var ta = $("#resp-msg");
       ta.value = resp.mensagem; ta.hidden = !resp.mensagem; $("#resp-escrever").hidden = !!resp.mensagem;
       actualizarQtd();
-    } else if (modo) {
+      rsvp.innerHTML = "";
+      return;
+    }
+    if (modo) {
       boxR.innerHTML = (actual ? '<div class="resumo"><p class="caps resumo-rot">' + (resp.registada ? "Resposta registada" : "A sua resposta") +
           '</p><p class="caps resumo-val">' + esc(textoResposta(actual)) + "</p>" +
           (modo === "resumo" ? '<button type="button" class="link-sub" id="resp-alterar">Alterar resposta</button>' : "") + "</div>" : "") +
         (modo === "fechado" ? '<p class="nota body">O prazo para responder no convite terminou. ' + (actual ? "Para mudar a resposta" : "Para responder") +
           ", fale com a família pelo WhatsApp.</p>" : "");
     } else boxR.innerHTML = "";
-    actualizarBotoes();
+    if (modo === "resumo") desenharBotoes(true, actual.estado, actual.pessoas, actual.mensagem || "");
+    else desenharBotoes(false, "confirmado", convidado && convidado.pessoas, "");
   }
+  /* contador de pessoas e rótulo do botão de gravar, conforme a escolha */
   function actualizarQtd() {
-    var q = $("#resp-qtd");
+    var q = $("#resp-qtd"), b = $("#resp-enviar");
+    if (b) b.lastChild.textContent = resp.estado === "recusado" ? "Enviar resposta" : C.confirmacao.botoes[0].rotulo.replace(/\s*\([^)]*\)\s*$/, "");
     if (!q) return;
     q.hidden = resp.estado !== "confirmado";
     $("#resp-n").textContent = resp.pessoas;
@@ -953,46 +958,53 @@ ICONS["vestido"] = '<path d="M9 4.6c1 .4 2 .6 3 .6s2-.2 3-.6"/><path d="M9 4.6l.
     $('[data-q="1"]', q).disabled = resp.pessoas >= convidado.pessoas;
   }
   boxR.addEventListener("change", function (e) {
-    if (e.target.name !== "resp-estado") return;
-    resp.estado = e.target.value; actualizarQtd(); actualizarBotoes();
+    if (e.target.name === "resp-estado") { resp.estado = e.target.value; actualizarQtd(); }
   });
   boxR.addEventListener("input", function (e) {
-    if (e.target.id === "resp-msg") { resp.mensagem = e.target.value; actualizarBotoes(); }
+    if (e.target.id === "resp-msg") resp.mensagem = e.target.value;
   });
   boxR.addEventListener("click", function (e) {
     var t = e.target.closest ? e.target.closest("button") : null;
     if (!t) return;
     if (t.hasAttribute("data-q")) {
       resp.pessoas = Math.max(1, Math.min(convidado.pessoas, resp.pessoas + Number(t.getAttribute("data-q"))));
-      actualizarQtd(); actualizarBotoes();
+      actualizarQtd();
     } else if (t.id === "resp-escrever") {
       t.hidden = true; var ta = $("#resp-msg"); ta.hidden = false; ta.focus();
+    } else if (t.id === "resp-enviar") {
+      if (!resp.aEnviar) enviarResposta();
     } else if (t.id === "resp-alterar") {
       resp.modo = "formulario"; resp.registada = false; desenharResposta();
       var r = $("input:checked", boxR); if (r) r.focus();
     }
   });
-  /* grava a resposta enquanto o WhatsApp abre (o link segue o seu caminho); sem rede, o aviso pelo WhatsApp chega na mesma */
-  function enviarResposta(semNumero) {
-    var corpo = { estado: resp.estado }, m = limpar(resp.mensagem), estado = $("#resp-estado");
+  /* grava a resposta; a seguir, o convite oferece «Avisar a família pelo WhatsApp», com a mensagem já escrita */
+  function enviarResposta() {
+    var corpo = { estado: resp.estado }, m = limpar(resp.mensagem), estado = $("#resp-estado"), botao = $("#resp-enviar");
     if (resp.estado === "confirmado") corpo.pessoas = resp.pessoas;
     if (m) corpo.mensagem = m;
-    if (!C.responder.caminho) { aviso("Pré-visualização: a resposta não fica gravada."); return; }
-    resp.aEnviar = true;
+    function registada(gravada) {
+      convidado.resposta = corpo;
+      resp.modo = "resumo"; resp.registada = gravada; desenharResposta();
+      var a = $("[data-rsvp]", rsvp); if (a && a.focus) a.focus({ preventScroll: true });
+    }
+    if (!C.responder.caminho) { registada(false); aviso("Pré-visualização: a resposta não fica gravada."); return; }
+    resp.aEnviar = botao.disabled = true;
     estado.textContent = "A registar a resposta…";
-    fetch(C.responder.caminho, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo), keepalive: true })
+    fetch(C.responder.caminho, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) })
       .then(function (r) {
         resp.aEnviar = false;
         if (r.status === 410) { C.responder.fechado = true; resp.modo = "fechado"; desenharResposta(); return; }
         if (!r.ok) throw new Error("HTTP " + r.status);
-        convidado.resposta = { estado: corpo.estado, pessoas: corpo.pessoas, mensagem: corpo.mensagem };
-        resp.modo = "resumo"; resp.registada = true; desenharResposta();
+        registada(true);
         aviso("Resposta registada.");
       })
       .catch(function () {
-        resp.aEnviar = false;
-        estado.textContent = "Não foi possível registar a resposta no convite. " +
-          (semNumero ? "Tente outra vez." : "Envie a mensagem do WhatsApp à família, ou tente outra vez.");
+        /* sem registo no convite, o convidado avisa na mesma a família pelo WhatsApp */
+        resp.aEnviar = botao.disabled = false;
+        estado.textContent = "Não foi possível registar a resposta no convite. Tente outra vez, ou avise a família pelo WhatsApp.";
+        desenharBotoes(true, corpo.estado, corpo.pessoas, corpo.mensagem || "");
+        rsvp.hidden = false;
       });
   }
 
