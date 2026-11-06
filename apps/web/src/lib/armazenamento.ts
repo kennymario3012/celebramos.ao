@@ -1,5 +1,5 @@
 /**
- * Armazenamento de dados da plataforma: documentos JSON em ficheiros, numa pasta fora da aplicação
+ * Armazenamento de dados da plataforma: documentos JSON (e as fotos da galeria) em ficheiros, numa pasta fora da aplicação
  * (CELEBRAMOS_DADOS, ex.: /home/celebramos/celebramos-dados no cPanel).
  *
  * Escrita condicional por ETag (concorrência optimista) e bloqueio entre processos: o Passenger
@@ -28,6 +28,8 @@ export interface ItemListado {
 
 export interface Armazenamento {
   lerJSON<T>(caminho: string): Promise<Leitura<T> | null>;
+  /** Ficheiro binário (ex.: foto da galeria), com o ETag do conteúdo. */
+  lerFicheiro(caminho: string): Promise<Leitura<Buffer> | null>;
   /** Escreve só se o ETag coincidir (`etag`) ou se ainda não existir (`criar`). Senão: ConflitoEscrita. */
   escreverJSON(caminho: string, dados: unknown, condicao: { etag?: string; criar?: boolean }): Promise<void>;
   /** Cria um marcador vazio com sufixo aleatório (registos só de acrescentar). */
@@ -52,7 +54,7 @@ function seguro(caminho: string) {
   return alvo;
 }
 
-const etagDe = (texto: string) => '"' + crypto.createHash("sha1").update(texto).digest("hex") + '"';
+const etagDe = (conteudo: string | Buffer) => '"' + crypto.createHash("sha1").update(conteudo).digest("hex") + '"';
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Fila por ficheiro dentro do mesmo processo (evita esperas activas entre pedidos do mesmo processo). */
@@ -112,6 +114,17 @@ const ficheiros: Armazenamento = {
       return { dados: JSON.parse(texto) as T, etag: etagDe(texto) };
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw e;
+    }
+  },
+
+  async lerFicheiro(caminho) {
+    try {
+      const dados = await fs.readFile(/*turbopackIgnore: true*/ seguro(caminho));
+      return { dados, etag: etagDe(dados) };
+    } catch (e) {
+      // ficheiro ou pasta inexistente (ex.: evento sem fotos)
+      if (["ENOENT", "ENOTDIR", "EISDIR"].includes((e as NodeJS.ErrnoException).code ?? "")) return null;
       throw e;
     }
   },

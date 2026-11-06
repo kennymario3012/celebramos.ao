@@ -11,6 +11,7 @@ Os IDs entre parênteses são os critérios de docs/07.
 import concurrent.futures
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -32,6 +33,9 @@ BASE = f"http://127.0.0.1:{PORTA}"
 BASE2 = f"http://127.0.0.1:{PORTA2}"
 SERVIDOR = APP / "dist" / "celebramos-web" / "server.js"
 SLUG = "exemplo-bela-principe"
+SLUG_GALERIA = "exemplo-jardim-rose"  # tem galeria de fotos
+SLUG_PRIVADO = "exemplo-jardim-rose-privado"  # cópia com o link geral desligado
+KIT_GALERIA = APP.parent.parent / "prototipo" / "temas" / "jardim-rose"
 PIN = "123456"
 TEL_FAMILIA = "244900000000"  # fictício
 CAPTURAS = APP / "testes" / "_capturas"
@@ -73,6 +77,12 @@ def preparar_dados(pasta):
     ev = pasta / "eventos" / SLUG / "evento.json"
     d = json.loads(ev.read_text())
     d["configuracao"]["confirmacao"]["botoes"][0]["telefone"] = TEL_FAMILIA
+    ev.write_text(json.dumps(d))
+    # evento com o link geral desligado (cópia do Jardim Rosé, com as fotos): só os links pessoais mostram a galeria
+    shutil.copytree(pasta / "eventos" / SLUG_GALERIA, pasta / "eventos" / SLUG_PRIVADO)
+    ev = pasta / "eventos" / SLUG_PRIVADO / "evento.json"
+    d = json.loads(ev.read_text())
+    d["linkGeralActivo"] = False
     ev.write_text(json.dumps(d))
 
 
@@ -165,6 +175,39 @@ def correr(R, capturas):
     R.ok("token ou evento inexistente: 404 igual (CA-PER-05)", estado404 == 404 and estado404b == 404 and corpo404 == corpo404b)
     estado, cab, corpo = pedido(f"/c/{SLUG}/calendario.ics")
     R.ok("calendário .ics (CA-CAL-01)", estado == 200 and cab.get("content-type", "").startswith("text/calendar") and b"BEGIN:VCALENDAR" in corpo and b"TRIGGER:-P1D" in corpo)
+
+    print("Convite: fotos da galeria (do evento, com a regra de acesso do convite)")
+    estado, _, corpo = pedido(f"/c/{SLUG_GALERIA}")
+    html = corpo.decode()
+    fotos = re.findall(rf'"src": "(/c/{SLUG_GALERIA}/img/[^"]+)"', html)
+    R.ok("link geral: as 3 fotos da galeria apontam para o evento", estado == 200 and len(fotos) == 3 and '"src": "img/' not in html, f"fotos={fotos}")
+    respostas = [pedido(f) for f in fotos]
+    R.ok("link geral: as fotos carregam, iguais às enviadas, em cache privada e com noindex",
+         len(respostas) == 3 and all(e == 200 and c.get("content-type") == "image/webp" and c.get("cache-control", "").startswith("private")
+                                     and c.get("x-robots-tag") == "noindex, nofollow" and b == (KIT_GALERIA / f.rsplit("/", 1)[1]).read_bytes()
+                                     for (e, c, b), f in zip(respostas, fotos)))
+    foto = fotos[0] if fotos else f"/c/{SLUG_GALERIA}/img/foto-1.webp"
+    nome = foto.rsplit("/", 1)[1]
+    estado, cab, _ = pedido(foto)
+    estado304, _, _ = pedido(foto, cabecalhos={"If-None-Match": cab.get("etag", "")})
+    R.ok("foto já vista: 304 pelo ETag", estado == 200 and estado304 == 304)
+    nao_existe = pedido(f"/c/nao-existe/img/{nome}")
+    geral_desligado = pedido(f"/c/{SLUG_PRIVADO}/img/{nome}")
+    token_invalido = pedido(f"/c/{SLUG_PRIVADO}/AAAAAAAAAAAAAAAAAAAAAA/img/{nome}")
+    R.ok("link geral desligado ou token inválido: fotos com o 404 do convite (CA-PER-05)",
+         nao_existe[0] == geral_desligado[0] == token_invalido[0] == 404 and nao_existe[2] == geral_desligado[2] == token_invalido[2])
+    invalidos = ["..%2Fevento.json", "..%2F..%2Fsistema%2Fsegredo-sessao.json", "%2E%2E%2Fconvidados.json", "evento.json", ".escondida.webp", "nao-existe.webp"]
+    estados = [pedido(f"/c/{SLUG_GALERIA}/img/{n}")[0] for n in invalidos]
+    R.ok("nomes inválidos ou fora da pasta das fotos: 404", estados == [404] * len(invalidos), f"estados={estados}")
+    _, cookie_privado, _ = entrar(PIN, SLUG_PRIVADO)
+    pedido(f"/api/gestao/{SLUG_PRIVADO}/convidados", "POST", {"nome": "Convidada da galeria", "pessoas": 1},
+           cookie=cookie_privado, cabecalhos={"X-Celebramos": "1"})
+    _, _, corpo = pedido(f"/api/gestao/{SLUG_PRIVADO}/dados", cookie=cookie_privado)
+    token_galeria = json.loads(corpo)["convidados"][0]["token"]
+    estado, _, corpo = pedido(f"/c/{SLUG_PRIVADO}/{token_galeria}")
+    pessoais = re.findall(rf'"src": "(/c/{SLUG_PRIVADO}/{token_galeria}/img/[^"]+)"', corpo.decode())
+    R.ok("link geral desligado: as fotos vêem-se pelo link pessoal", estado == 200 and len(pessoais) == 3 and all(pedido(f)[0] == 200 for f in pessoais),
+         f"fotos={pessoais}")
 
     print("Zona de gestão: acesso")
     estado, _, _ = pedido(f"/api/gestao/{SLUG}/dados")
@@ -360,6 +403,25 @@ def correr(R, capturas):
         fora = pg5.evaluate("[...document.querySelectorAll('.painel *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.right>innerWidth+1&&!e.closest('.filtros')}).length")
         R.ok("320 px: sem transbordo horizontal", fora == 0, f"fora={fora}")
         ctx5.close()
+
+        # galeria no telemóvel: as fotos aparecem (a consola não mostra recursos em falta, por isso ver as respostas)
+        ctx6, pg6, _ = pagina(b)
+        falhadas = []
+        pg6.on("response", lambda r: falhadas.append(f"{r.status} {r.url}") if r.status >= 400 and "/img/" in r.url else None)
+        pg6.goto(f"{BASE}/c/{SLUG_PRIVADO}/{token_galeria}?previa=1")
+        pg6.click("#envelope")
+        pg6.wait_for_timeout(2700)
+        pg6.evaluate("document.querySelector('[data-seccao=galeria]').scrollIntoView()")
+        carregadas = "[...document.querySelectorAll('#galeria img')].filter(i => i.complete && i.naturalWidth > 0).length"
+        try:
+            pg6.wait_for_function(f"{carregadas} === 3", timeout=10_000)
+        except Exception:
+            pass
+        vistas = pg6.evaluate(carregadas)
+        R.ok("galeria no telemóvel: as 3 fotos aparecem, sem pedidos falhados", vistas == 3 and not falhadas, f"vistas={vistas} {'; '.join(falhadas[:2])}")
+        if capturas:
+            pg6.screenshot(path=str(CAPTURAS / "11-convite-galeria.png"))
+        ctx6.close()
         ctx.close()
         b.close()
 
